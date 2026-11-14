@@ -296,13 +296,6 @@ body {
 .picker-opt.selected {
   background: var(--accent-soft);
 }
-.picker-opt.blocked {
-  cursor: not-allowed;
-  opacity: 0.75;
-}
-.picker-opt.blocked strong {
-  color: var(--muted);
-}
 .opt-main {
   flex: 1;
   min-width: 0;

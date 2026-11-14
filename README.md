@@ -25,20 +25,20 @@ La selección de modelos, las fichas (qué hacen bien, límites, equipo) y las l
 
 - Barra lateral con las conversaciones (nueva, renombrar, borrar, buscar en títulos y mensajes), guardadas en IndexedDB.
 - Respuesta en streaming con parar (Esc), regenerar y copiar; Markdown propio (sin `innerHTML` con texto del modelo) con resaltado de código (highlight.js) y botón de copiar en cada bloque.
-- Selector de modelo con ficha, estado (descargado, cargado) y bloqueo de los que no caben en tu GPU.
+- Selector de modelo con ficha, estado (descargado, cargado) y advertencias de compatibilidad, sin restringir la selección.
 - Panel de ajustes: prompt de sistema, temperatura, top-p, máximo de tokens, razonamiento sí/no y uso del contexto. Si la conversación no cabe, se omiten los mensajes más antiguos.
 - Descarga con progreso real (bytes) y gestión de modelos guardados (tamaño en caché, borrar, limpiar revisiones antiguas).
 - Tema claro y oscuro, español e inglés, barra lateral como cajón en móvil.
 - Adjuntar archivos (clip, arrastrar o pegar): PDF (texto extraído con pdf.js, cargado solo al adjuntar uno) y archivos de texto o código, hasta 5 por mensaje. Se leen en el navegador y se añaden al mensaje como texto; si no caben en el contexto del modelo, la app lo dice antes de enviar (`src/app/attach.ts`).
 - Instalable como app (botón en la barra superior cuando el navegador lo permite; en iPhone/iPad explica cómo añadirla desde Safari).
-- En móviles solo se ofrece el modelo ligero: Qwen3.5 4B cerraba el navegador al cargarse incluso en un móvil con 12 GB de RAM. Si una carga no termina (la pestaña se cierra por falta de memoria), al volver no se repite sola y la app explica qué ha pasado.
+- Todos los modelos se pueden seleccionar también en móvil. Se recomienda el ligero y se advierte del riesgo de falta de memoria con los mayores. Si una carga no termina (la pestaña se cierra por falta de memoria), al volver no se repite sola y la app explica qué ha pasado.
 - Sin conexión: tras la primera visita y la descarga del modelo, la web y el chat funcionan sin internet. Un *service worker* generado en el build (`dist/sw.js`, plugin `offline` de `vite.config.ts`) guarda las páginas, el código y el runtime WebAssembly; los modelos quedan en la caché de Transformers.js. El worker fija también las peticiones de Transformers.js a la rama `main` (comprobación del tokenizador) a la revisión del modelo y las sirve desde la caché.
 
 ## Cómo funciona
 
 - **Motor** (`src/engine/worker.ts`): Transformers.js 4.3.2 en un Web Worker, `device: 'webgpu'`, plantillas de chat oficiales de cada modelo (con `enable_thinking`).
 - **Caché entre turnos**: se conserva la caché de claves y valores (y los estados recurrentes de LFM3/Qwen3.5) de la última respuesta y una instantánea al final del historial. Como las plantillas reescriben respuestas anteriores (p. ej. quitan el razonamiento), la instantánea permite reutilizar todo el historial y procesar solo la última respuesta y el mensaje nuevo. Las estadísticas de cada respuesta muestran cuántos tokens se reutilizaron.
-- **Detección** (`src/engine/gpu.ts`): WebGPU, `shader-f16`, `maxBufferSize`/`maxStorageBufferBindingSize`, memoria del equipo y móvil. Sin WebGPU o sin f16 la app explica por qué y qué hacer; no hay modo WASM.
+- **Detección** (`src/engine/gpu.ts`): WebGPU, `shader-f16`, `maxBufferSize`/`maxStorageBufferBindingSize`, memoria del equipo y móvil (advertencias, no bloqueos por modelo). Sin WebGPU o sin f16 la app explica por qué y qué hacer; no hay modo WASM.
 - **Red**: la CSP solo permite conectarse a la propia web, `huggingface.co` y `us.aws.cdn.hf.co` (CDN al que redirige Hugging Face, comprobado desde varios países). El runtime WebAssembly de ONNX Runtime se sirve desde `/ort/`.
 
 ## Diagnóstico de rendimiento

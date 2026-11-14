@@ -2,7 +2,7 @@ import '@fontsource-variable/inter';
 import '../tokens.css';
 import './app.css';
 import { Engine } from '../engine/client.ts';
-import { fit, probeGpu, recommend, type GpuReport } from '../engine/gpu.ts';
+import { modelWarning, probeGpu, recommend, type GpuReport } from '../engine/gpu.ts';
 import { AVAILABLE, MODELS, downloadBytes, modelById, type ModelId, type ModelInfo } from '../engine/models.ts';
 import type { ChatMessage, GenOptions, GenStats } from '../engine/protocol.ts';
 import { lang, locale, localPath, t } from '../i18n.ts';
@@ -438,22 +438,21 @@ function renderPicker() {
   const menu = h('div', { class: 'picker-menu', role: 'listbox', id: 'picker-menu', hidden: true });
   const rec = gpu ? recommend(gpu) : null;
   for (const x of AVAILABLE) {
-    const f = gpu ? fit(x, gpu) : { ok: true as const };
+    const warning = gpu ? modelWarning(x, gpu) : null;
     const s = statusOf(x);
     const opt = h(
       'div',
-      { class: `picker-opt${x.id === m?.id ? ' selected' : ''}${f.ok ? '' : ' blocked'}`, role: 'option', 'aria-selected': x.id === m?.id ? 'true' : 'false', 'aria-disabled': f.ok ? null : 'true', tabIndex: 0 },
+      { class: `picker-opt${x.id === m?.id ? ' selected' : ''}`, role: 'option', 'aria-selected': x.id === m?.id ? 'true' : 'false', tabIndex: 0 },
       h(
         'div',
         { class: 'opt-main' },
         h('div', { class: 'opt-title' }, h('strong', {}, x.name), h('span', { class: `tier ${x.tier}` }, tierLabel(x.tier)), x.id === rec ? h('span', { class: 'tag-rec' }, t('Para tu equipo')) : null),
         h('div', { class: 'opt-meta' }, h('span', { class: `dot ${s.cls}` }), h('span', {}, s.label)),
-        f.ok ? (f.warn === 'software' ? h('div', { class: 'opt-warn' }, t('Tu GPU es un adaptador por software: irá muy lento.')) : f.warn === 'memory-low' ? h('div', { class: 'opt-warn' }, t('El navegador indica poca memoria; puede no caber.')) : f.warn ? h('div', { class: 'opt-warn' }, t('Necesita una GPU potente; puede no caber en la tuya.')) : null) : h('div', { class: 'opt-warn' }, blockReason(f.why)),
+        warning ? h('div', { class: 'opt-warn' }, warningText(warning)) : null,
       ),
       h('button', { type: 'button', class: 'icon-btn sm', title: t('Ficha del modelo'), 'aria-label': t('Ficha del modelo'), onclick: (e: Event) => (e.stopPropagation(), closePicker(), showCard(x)) }, icon('info', 16)),
     );
-    if (f.ok)
-      opt.addEventListener('click', () => {
+    opt.addEventListener('click', () => {
         closePicker();
         void selectModel(x.id, true);
       });
@@ -474,16 +473,20 @@ function renderPicker() {
   el.picker.replaceChildren(btn, menu);
 }
 
-function blockReason(why: string): string {
+function warningText(why: string): string {
   switch (why) {
     case 'no-f16':
       return t('Tu GPU no admite shader-f16.');
     case 'buffer':
       return t('Tu GPU no admite búferes tan grandes como los de este modelo.');
-    case 'memory':
-      return t('Tu equipo tiene poca memoria para este modelo.');
+    case 'memory-low':
+      return t('El navegador indica poca memoria; puede no caber.');
+    case 'software':
+      return t('Tu GPU es un adaptador por software: irá muy lento.');
+    case 'memory-unknown':
+      return t('Necesita una GPU potente; puede no caber en la tuya.');
     case 'mobile':
-      return t('Demasiado grande para un móvil.');
+      return t('En móvil puede faltar memoria y cerrarse la pestaña. Puedes probarlo igualmente.');
     default:
       return t('Necesita WebGPU.');
   }
@@ -1255,7 +1258,7 @@ async function openModels() {
     const list = h('div', { class: 'model-rows' });
     for (const m of AVAILABLE) {
       const c = cacheInfo.get(m.id)!;
-      const f = gpu ? fit(m, gpu) : { ok: true as const };
+      const warning = gpu ? modelWarning(m, gpu) : null;
       const complete = isComplete(c);
       const partial = !complete && c.present > 0;
       const actions = h('div', { class: 'row-actions' });
@@ -1281,7 +1284,7 @@ async function openModels() {
             t('Borrar'),
           ),
         );
-      if (!complete && f.ok)
+      if (!complete)
         actions.append(h('button', { type: 'button', class: 'btn small', onclick: () => (d.close(), void selectModel(m.id, true)) }, icon('download', 15), partial ? t('Completar descarga') : t('Descargar')));
       list.append(
         h(
@@ -1296,7 +1299,7 @@ async function openModels() {
               { class: 'row-meta' },
               complete ? t('Descargado · ocupa {s}', { s: fmtBytes(c.bytes) }) : partial ? t('Descarga incompleta · {s} guardados', { s: fmtBytes(c.bytes) }) : t('No descargado · {s}', { s: fmtBytes(downloadBytes(m)) }),
             ),
-            f.ok ? null : h('div', { class: 'opt-warn' }, blockReason(f.why)),
+            warning ? h('div', { class: 'opt-warn' }, warningText(warning)) : null,
           ),
           actions,
         ),
@@ -1378,7 +1381,7 @@ function benchBox(m: ModelInfo): HTMLElement {
       g.set(sc / 10);
       value.firstElementChild!.textContent = fmtNum(sc, 1);
       verdict.replaceChildren(h('strong', {}, t(LEVEL_TEXT[lv][0])), h('span', {}, t(LEVEL_TEXT[lv][1])));
-      const lighter = AVAILABLE.filter((x) => x.gpuMemory < m.gpuMemory && (!gpu || fit(x, gpu).ok)).sort((a, b) => b.gpuMemory - a.gpuMemory)[0];
+      const lighter = AVAILABLE.filter((x) => x.gpuMemory < m.gpuMemory).sort((a, b) => b.gpuMemory - a.gpuMemory)[0];
       const weights = m.files.filter((f) => f.path.includes('.onnx')).reduce((a, f) => a + f.bytes, 0);
       const report = {
         model: m.id,
@@ -1520,10 +1523,10 @@ async function boot() {
   }
   await refreshCache();
   const rec = recommend(gpu);
-  // ?model=<id> (links from the model pages) picks that model when the device can run it.
+  // Explicit and saved choices are preserved on every device.
   const asked = modelById(new URLSearchParams(location.search).get('model') ?? '');
   const saved = settings.model && modelById(settings.model);
-  const initial = asked && fit(asked, gpu).ok ? asked.id : saved && fit(saved, gpu).ok ? saved.id : rec;
+  const initial = asked?.id ?? (saved ? saved.id : rec);
   if (initial) {
     selected = modelById(initial)!;
     settings.model = initial;

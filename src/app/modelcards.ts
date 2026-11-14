@@ -42,7 +42,7 @@ export function card(id: ModelId): Card {
           t('Puede equivocarse en datos concretos; compruébalos.'),
           t('Aquí solo trabaja con texto (el modelo original también admite imágenes).'),
         ],
-        hardware: t('GPU con WebGPU y shader-f16, unos 4 GB de memoria gráfica libre y 8 GB de RAM o más. No disponible en móviles.'),
+        hardware: t('GPU con WebGPU y shader-f16, unos 4 GB de memoria gráfica libre y 8 GB de RAM o más. En móviles puede faltar memoria.'),
         licenseNote: t('Licencia Apache 2.0 de Alibaba Cloud (Qwen): uso libre, también comercial, conservando el aviso de licencia.'),
       };
     case 'gemma4-12b':
