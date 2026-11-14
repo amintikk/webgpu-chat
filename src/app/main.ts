@@ -1446,7 +1446,9 @@ void boot();
 type InstallEvent = Event & { prompt(): Promise<void>; userChoice: Promise<{ outcome: string }> };
 let installEvt: InstallEvent | null = null;
 const installBtn = $<HTMLButtonElement>('btn-install');
-const standalone = () => matchMedia('(display-mode: standalone)').matches || (navigator as Navigator & { standalone?: boolean }).standalone === true;
+const standalone = () =>
+  ['standalone', 'fullscreen', 'minimal-ui', 'window-controls-overlay'].some((m) => matchMedia(`(display-mode: ${m})`).matches) ||
+  (navigator as Navigator & { standalone?: boolean }).standalone === true;
 const iosSafari = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 const renderInstall = () => {
   installBtn.hidden = standalone() || !(installEvt || iosSafari);

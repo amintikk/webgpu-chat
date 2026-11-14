@@ -344,6 +344,11 @@ a {
   padding: 0 13px;
   font-size: 13px;
 }
+/* `hidden` always wins over a component's own display (e.g. .icon-btn below). */
+[hidden] {
+  display: none !important;
+}
+
 .icon-btn {
   display: inline-grid;
   place-items: center;
