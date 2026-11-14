@@ -12,6 +12,7 @@ import { hydrateIcons, icon } from '../ui/icons.ts';
 import { cacheStatus, deleteModel, deleteOrphans, isComplete, orphanBytes, storageEstimate, type CacheEntry } from './cache.ts';
 import { deleteConversation, listConversations, newId, saveConversation, titleFrom, type Conversation, type StoredMessage } from './db.ts';
 import { card, tierLabel } from './modelcards.ts';
+import { level, score, wait, type Level, type Wait } from './score.ts';
 import { copyButton, renderMarkdown } from './render.ts';
 
 // ---------------------------------------------------------------------------------------------
@@ -1019,15 +1020,66 @@ async function openModels() {
   await draw();
 }
 
+/** Semicircular gauge (inline SVG); `set(fraction)` animates the arc. */
+function gauge(): { el: SVGSVGElement; set: (f: number) => void; running: (on: boolean) => void } {
+  const ns = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(ns, 'svg');
+  svg.setAttribute('viewBox', '0 0 160 92');
+  svg.classList.add('gauge');
+  const d = 'M 14 82 A 66 66 0 0 1 146 82';
+  const track = document.createElementNS(ns, 'path');
+  track.setAttribute('d', d);
+  track.classList.add('gauge-track');
+  const arc = document.createElementNS(ns, 'path');
+  arc.setAttribute('d', d);
+  arc.setAttribute('pathLength', '100');
+  arc.classList.add('gauge-arc');
+  svg.append(track, arc);
+  return {
+    el: svg,
+    set: (f) => requestAnimationFrame(() => (arc.style.strokeDashoffset = String(100 - Math.max(0.02, Math.min(1, f)) * 100))),
+    running: (on) => svg.classList.toggle('running', on),
+  };
+}
+
+const LEVEL_TEXT: Record<Level, [string, string]> = {
+  excellent: ['Excelente', 'Escribe mucho más rápido de lo que puedes leer.'],
+  great: ['Muy buena', 'Escribe más rápido de lo que lees: las respuestas fluyen sin esperas.'],
+  good: ['Buena', 'Escribe más o menos a tu ritmo de lectura.'],
+  fair: ['Aceptable', 'Escribe algo más despacio de lo que lees. Se puede usar con un poco de paciencia.'],
+  slow: ['Lenta', 'Tendrás que esperar bastante en cada respuesta.'],
+};
+const WAIT_TEXT: Record<Wait, string> = {
+  instant: 'Empieza a responder al instante.',
+  quick: 'Empieza a responder en un momento.',
+  noticeable: 'Tarda unos segundos en empezar a responder.',
+  long: 'Tarda bastante en empezar a responder.',
+};
+
 function benchBox(m: ModelInfo): HTMLElement {
-  const out = h('div', { class: 'bench-out' });
-  const btn = h('button', { type: 'button', class: 'btn small' }, icon('gauge', 15), t('Medir rendimiento'));
+  const g = gauge();
+  const value = h('div', { class: 'bench-score' }, h('strong', {}, '—'), h('span', {}, '/ 10'));
+  const verdict = h('div', { class: 'bench-verdict' }, t('Mide cómo de rápido va {m} en tu equipo.', { m: m.name }));
+  const details = h('div', { class: 'bench-details' });
+  const btn = h('button', { type: 'button', class: 'btn primary small' }, icon('gauge', 15), t('Medir rendimiento'));
   btn.addEventListener('click', async () => {
     if (generating) return toast(t('Espera a que termine la respuesta o párala.'));
     btn.disabled = true;
-    out.replaceChildren(h('p', { class: 'hint' }, t('Generando 128 tokens dos veces con {m}…', { m: m.name })));
+    g.running(true);
+    g.set(0.02);
+    value.firstElementChild!.textContent = '…';
+    verdict.textContent = t('Midiendo… el modelo escribe un texto de prueba dos veces.');
+    details.replaceChildren();
     try {
       const r = await engine.bench();
+      const sc = score(r.tokensPerSecond);
+      const lv = level(r.tokensPerSecond);
+      const wt = wait(r.prefillMs);
+      g.running(false);
+      g.set(sc / 10);
+      value.firstElementChild!.textContent = fmtNum(sc, 1);
+      verdict.replaceChildren(h('strong', {}, t(LEVEL_TEXT[lv][0])), h('span', {}, t(LEVEL_TEXT[lv][1])));
+      const lighter = AVAILABLE.filter((x) => x.gpuMemory < m.gpuMemory && (!gpu || fit(x, gpu).ok)).sort((a, b) => b.gpuMemory - a.gpuMemory)[0];
       const weights = m.files.filter((f) => f.path.includes('.onnx')).reduce((a, f) => a + f.bytes, 0);
       const report = {
         model: m.id,
@@ -1036,26 +1088,48 @@ function benchBox(m: ModelInfo): HTMLElement {
         userAgent: navigator.userAgent,
         downloadBytes: downloadBytes(m),
         weightBytesOnGpu: weights,
+        score: sc,
         ...r,
         date: new Date().toISOString(),
       };
-      out.replaceChildren(
-        h(
-          'dl',
-          {},
-          h('div', {}, h('dt', {}, t('Generación')), h('dd', {}, t('{v} tokens/s', { v: fmtNum(r.tokensPerSecond, 1) }))),
-          h('div', {}, h('dt', {}, t('Lectura del prompt')), h('dd', {}, t('{v} tokens/s ({n} tokens en {d})', { v: fmtNum(r.prefillTokensPerSecond, 0), n: r.promptTokens, d: fmtDuration(r.prefillMs) }))),
-          h('div', {}, h('dt', {}, t('Pesos en la GPU')), h('dd', {}, fmtBytes(weights))),
+      details.replaceChildren(
+        h('ul', { class: 'bench-facts' },
+          h('li', {}, icon('zap', 15), h('span', {}, t('{v} palabras por segundo, aproximadamente', { v: fmtNum(r.tokensPerSecond * 0.7, 0) }))),
+          h('li', {}, icon('message', 15), h('span', {}, t(WAIT_TEXT[wt]))),
         ),
-        h('div', { class: 'bench-copy' }, copyButton(() => JSON.stringify(report, null, 2), t('Copiar resultado (JSON)')), h('span', { class: 'hint' }, t('Copiar resultado (JSON)'))),
+        ...((lv === 'fair' || lv === 'slow') && lighter ? [h('p', { class: 'bench-tip' }, t('Para que vaya más rápido, prueba {m}.', { m: lighter.name }))] : []),
+        ...(gpu?.software ? [h('p', { class: 'bench-tip' }, t('Tu navegador usa la CPU en lugar de la GPU: activa la aceleración por hardware.'))] : []),
+        h(
+          'details',
+          { class: 'bench-more' },
+          h('summary', {}, t('Datos técnicos')),
+          h(
+            'dl',
+            {},
+            h('div', {}, h('dt', {}, t('Generación')), h('dd', {}, t('{v} tokens/s', { v: fmtNum(r.tokensPerSecond, 1) }))),
+            h('div', {}, h('dt', {}, t('Lectura del prompt')), h('dd', {}, t('{v} tokens/s ({n} tokens en {d})', { v: fmtNum(r.prefillTokensPerSecond, 0), n: r.promptTokens, d: fmtDuration(r.prefillMs) }))),
+            h('div', {}, h('dt', {}, t('Pesos en la GPU')), h('dd', {}, fmtBytes(weights))),
+          ),
+          h('div', { class: 'bench-copy' }, copyButton(() => JSON.stringify(report, null, 2), t('Copiar resultado (JSON)')), h('span', { class: 'hint' }, t('Copiar resultado (JSON)'))),
+        ),
       );
+      btn.replaceChildren(icon('refresh', 15), t('Repetir'));
     } catch (e) {
-      out.replaceChildren(h('p', { class: 'opt-warn' }, e instanceof Error ? e.message : String(e)));
+      g.running(false);
+      g.set(0);
+      value.firstElementChild!.textContent = '—';
+      verdict.replaceChildren(h('span', { class: 'opt-warn' }, e instanceof Error ? e.message : String(e)));
     }
     btn.disabled = false;
     engine.reset();
   });
-  return h('div', { class: 'bench' }, h('div', { class: 'bench-head' }, h('strong', {}, t('Rendimiento en tu equipo')), btn), h('p', { class: 'hint' }, t('Prueba fija: el mismo prompt y 128 tokens con decodificación voraz. Nada sale del navegador.')), out);
+  return h(
+    'div',
+    { class: 'bench' },
+    h('div', { class: 'bench-head' }, h('strong', {}, t('Rendimiento en tu equipo')), btn),
+    h('div', { class: 'bench-main' }, h('div', { class: 'bench-gauge' }, g.el, value), verdict),
+    details,
+  );
 }
 
 /** A confirmation shown above another open dialog. */
