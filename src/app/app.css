@@ -2142,3 +2142,10 @@ dialog::backdrop {
     padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
   }
 }
+
+/* The conversation fades out softly at its edges instead of being cut by a hard line where it meets the
+   top bar and the composer (most visible with the keyboard open). */
+.thread {
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 14px, #000 calc(100% - 36px), transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 0, #000 14px, #000 calc(100% - 36px), transparent 100%);
+}
