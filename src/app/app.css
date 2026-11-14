@@ -1908,3 +1908,20 @@ dialog::backdrop {
 .msg.streaming {
   content-visibility: visible;
 }
+
+/* On narrow screens the model menu spans the screen with equal margins instead of hanging off the picker. */
+@media (max-width: 899px) {
+  .picker-menu {
+    position: fixed;
+    top: 58px;
+    left: 12px;
+    right: 12px;
+    width: auto;
+    max-height: calc(100dvh - 80px);
+    overflow-y: auto;
+    transform-origin: top center;
+  }
+}
+.picker-menu {
+  background: color-mix(in srgb, var(--surface-solid) 97%, transparent);
+}
