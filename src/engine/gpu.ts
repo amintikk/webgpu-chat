@@ -20,7 +20,7 @@ export interface GpuReport {
   mobile: boolean;
 }
 
-export type Fit = { ok: true; warn?: 'memory-unknown' | 'software' } | { ok: false; why: 'no-f16' | 'buffer' | 'memory' | 'mobile' | 'no-webgpu' };
+export type Fit = { ok: true; warn?: 'memory-unknown' | 'memory-low' | 'software' } | { ok: false; why: 'no-f16' | 'buffer' | 'memory' | 'mobile' | 'no-webgpu' };
 
 export async function probeGpu(): Promise<GpuReport> {
   const nav = navigator as Navigator & { deviceMemory?: number; userAgentData?: { mobile?: boolean } };
@@ -71,8 +71,10 @@ export function fit(m: ModelInfo, g: GpuReport): Fit {
   // Phones: only the light model. Qwen3.5 4B closes the browser even on a 12 GB flagship (tested on a recent
   // Snapdragon): while loading, the weights sit in memory and on the GPU at the same time.
   if (m.tier !== 'light' && g.mobile) return { ok: false, why: 'mobile' };
-  if (g.deviceMemory && g.deviceMemory < MIN_MEMORY[m.tier]) return { ok: false, why: 'memory' };
+  // navigator.deviceMemory is capped at 8 GB and is only a hint (some browsers report less than the machine has),
+  // so on computers it warns instead of blocking. Phones are blocked above, on their own rule.
   if (g.software) return { ok: true, warn: 'software' };
+  if (g.deviceMemory && g.deviceMemory < MIN_MEMORY[m.tier]) return { ok: true, warn: 'memory-low' };
   if (m.tier === 'max') return { ok: true, warn: 'memory-unknown' };
   return { ok: true };
 }

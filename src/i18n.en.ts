@@ -94,6 +94,7 @@ export const EN: Record<string, string> = {
   'No se pudo copiar: selecciona el texto del informe.': 'Could not copy: select the report text.',
   'Informe de depuración': 'Debug report',
   'Cópialo tal cual y pégalo en el mensaje. Así se ve qué ha pasado en cada paso.': 'Copy it as it is and paste it in your message. That shows what happened at each step.',
+  'El navegador indica poca memoria; puede no caber.': 'The browser reports little memory; it may not fit.',
   'Descargando {m} · {a} de {b}': 'Downloading {m} · {a} of {b}',
   'Parar (Esc)': 'Stop (Esc)',
   'Enviar (Intro)': 'Send (Enter)',

@@ -448,7 +448,7 @@ function renderPicker() {
         { class: 'opt-main' },
         h('div', { class: 'opt-title' }, h('strong', {}, x.name), h('span', { class: `tier ${x.tier}` }, tierLabel(x.tier)), x.id === rec ? h('span', { class: 'tag-rec' }, t('Para tu equipo')) : null),
         h('div', { class: 'opt-meta' }, h('span', { class: `dot ${s.cls}` }), h('span', {}, s.label)),
-        f.ok ? (f.warn === 'software' ? h('div', { class: 'opt-warn' }, t('Tu GPU es un adaptador por software: irá muy lento.')) : f.warn ? h('div', { class: 'opt-warn' }, t('Necesita una GPU potente; puede no caber en la tuya.')) : null) : h('div', { class: 'opt-warn' }, blockReason(f.why)),
+        f.ok ? (f.warn === 'software' ? h('div', { class: 'opt-warn' }, t('Tu GPU es un adaptador por software: irá muy lento.')) : f.warn === 'memory-low' ? h('div', { class: 'opt-warn' }, t('El navegador indica poca memoria; puede no caber.')) : f.warn ? h('div', { class: 'opt-warn' }, t('Necesita una GPU potente; puede no caber en la tuya.')) : null) : h('div', { class: 'opt-warn' }, blockReason(f.why)),
       ),
       h('button', { type: 'button', class: 'icon-btn sm', title: t('Ficha del modelo'), 'aria-label': t('Ficha del modelo'), onclick: (e: Event) => (e.stopPropagation(), closePicker(), showCard(x)) }, icon('info', 16)),
     );
