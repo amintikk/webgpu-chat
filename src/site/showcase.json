@@ -1,0 +1,167 @@
+{
+  "model": "Qwen3.5 4B",
+  "es": [
+    {
+      "icon": "pen",
+      "title": "Escribir",
+      "prompt": "Escribe un haiku sobre la aurora boreal.",
+      "answer": "Cielos de verde brillante,\nBajo el manto de la noche,\nDanza en el aire frío.",
+      "tokens": 26,
+      "truncated": false
+    },
+    {
+      "icon": "sparkle",
+      "title": "Explicar",
+      "prompt": "Explícame la relatividad como si tuviera 10 años, en tres frases.",
+      "answer": "La relatividad nos dice que el tiempo y el espacio no son fijos, sino que se \"estiran\" o \"encogen\" dependiendo de qué tan rápido vayas o de si estás cerca de un objeto muy grande como la Tierra.\nEsto significa que dos personas que se mueven a diferentes velocidades verán pasar el tiempo de forma distinta, y que la velocidad de la luz es la misma para todos, sin importar cuánto corran.\nEn resumen, el universo es más extraño de lo que parece: lo que es verdadero para ti puede no serlo para alguien que viaja a velocidades increíbles.",
+      "tokens": 125,
+      "truncated": false
+    },
+    {
+      "icon": "map",
+      "title": "Planificar",
+      "prompt": "Plan breve de 2 días en Lisboa con poco presupuesto, en una lista.",
+      "answer": "Aquí tienes un plan de 2 días en Lisboa con un presupuesto ajustado, diseñado para maximizar lo esencial y minimizar gastos:\n\n*   **Día 1: La ciudad vieja y la vida nocturna**\n    *   Desayuno: Café de la mañana en una cafetería local (aprox. 2-3€) y un pastel de nata o bolo de queijo.\n    *   Almuerzo: Comida en un \"távor\" (bar de comida rápida) o un restaurante de mercado (mercado de Chiado o de São Carlos) con un menú del día o platos sencillos (aprox. 10-12€).\n    *   Tarde: Caminata gratuita por Alfama y Mouraria, visitando la Torre de Belém (entrada gratuita si no vas a la cima) y paseando por la Plaza de Fornos de Chimineias.\n    *   Cena: Comida en un restaurante de la zona de Mouraria o en un \"churrumaria\" (churrascón) económico (aprox. 12-15€).\n    *   Noche: Paseo nocturno por la Baixa y entrada gratuita a la Praça do Comércio para",
+      "tokens": 260,
+      "truncated": true
+    },
+    {
+      "icon": "code",
+      "title": "Programar",
+      "prompt": "Función en Python que diga si una palabra es un palíndromo. Solo el código.",
+      "answer": "```python\ndef es_palindromo(palabra):\n    # Convertir a minúsculas y eliminar espacios\n    palabra = palabra.lower().replace(\" \", \"\")\n    # Comparar la cadena con su inversa\n    return palabra == palabra[::-1]\n\n# Ejemplo de uso:\n# print(es_palindromo(\"radar\"))  # True\n# print(es_palindromo(\"python\")) # False\n```",
+      "tokens": 92,
+      "truncated": false
+    },
+    {
+      "icon": "mail",
+      "title": "Redactar",
+      "prompt": "Escribe un correo de tres líneas para aplazar una reunión al jueves.",
+      "answer": "Estimado/a, le escribo para solicitar el aplazamiento de nuestra reunión programada. ¿Podríamos convenir un nuevo horario para el jueves? Quedo atento/a a su confirmación.",
+      "tokens": 44,
+      "truncated": false
+    },
+    {
+      "icon": "check",
+      "title": "Corregir",
+      "prompt": "Corrige este texto: «Ayer fuimos a la playa y nos lo pasemos muy bien, aunque hacia muchisimo calor.»",
+      "answer": "El texto original tiene un error de concordancia en el verbo y una pequeña redundancia en la expresión de la intensidad del calor.\n\nAquí tienes la corrección:\n\n**«Ayer fuimos a la playa y nos lo pasamos muy bien, aunque hacía mucho calor.»**\n\n### Explicación de los cambios:\n\n1.  **Concordancia verbal**: El sujeto de la frase es \"nosotros\" (implícito en \"nos lo pasamos\"). Por lo tanto, el verbo debe ir en plural (**pasamos**) y no en singular (*pasemos*).\n2.  **Expresión idiomática**: La frase \"hacia muchisimo calor\" es incorrecta. La expresión correcta para describir una temperatura alta en el pasado es **\"hacía mucho calor\"**.\n    *   *Nota*: Aunque \"hacia\" puede significar \"dirigido hacia\", en el contexto del clima se usa siempre el verbo *hacer* en el imperfecto (*hacía*).\n3.  **Redundancia**: La palabra \"muy\" antes de \"mucho\" no es necesaria ni natural en esta construcción. Se prefiere **\"mucho calor\"**.\n\n**Otras variantes válidas:**",
+      "tokens": 260,
+      "truncated": true
+    },
+    {
+      "icon": "calc",
+      "title": "Calcular",
+      "prompt": "¿Cuánto es el 15 % de 240? Explica el cálculo en una línea.",
+      "answer": "El 15 % de 240 es 36, obtenido multiplicando 240 por 0,15.",
+      "tokens": 30,
+      "truncated": false
+    },
+    {
+      "icon": "globe",
+      "title": "Traducir",
+      "prompt": "Traduce al inglés: «La biblioteca abre a las nueve y cierra al anochecer.»",
+      "answer": "The library opens at nine and closes at dusk.",
+      "tokens": 11,
+      "truncated": false
+    },
+    {
+      "icon": "bulb",
+      "title": "Idear",
+      "prompt": "Cinco nombres para una cafetería con libros. Solo la lista.",
+      "answer": "1. El Libro de Café\n2. Tinta y Taza\n3. Páginas y Muecas\n4. El Cuarto de Lectura\n5. Café y Cuentos",
+      "tokens": 39,
+      "truncated": false
+    },
+    {
+      "icon": "table",
+      "title": "Ordenar",
+      "prompt": "Haz una tabla Markdown con tres planetas y su número de lunas.",
+      "answer": "| Planeta | Número de Lunas |\n| :--- | :--- |\n| Júpiter | 95 |\n| Saturno | 146 |\n| Urano | 27 |\n\n*(Nota: Los datos se basan en el conteo actual de lunas confirmadas por la NASA y la Unión Astronómica Internacional.)*",
+      "tokens": 78,
+      "truncated": false
+    }
+  ],
+  "en": [
+    {
+      "icon": "pen",
+      "title": "Write",
+      "prompt": "Write a haiku about the northern lights.",
+      "answer": "Green and purple dance,\nSilent waves across the night,\nNorthern lights appear.",
+      "tokens": 19,
+      "truncated": false
+    },
+    {
+      "icon": "sparkle",
+      "title": "Explain",
+      "prompt": "Explain relativity to a 10-year-old in three sentences.",
+      "answer": "Relativity is a special theory that tells us how time and space change depending on how fast you are moving. If you zoom around in a spaceship very fast, time will actually slow down for you compared to people staying still on Earth. This means that speed can stretch time and squeeze space, making the universe feel a little different depending on your point of view.",
+      "tokens": 73,
+      "truncated": false
+    },
+    {
+      "icon": "map",
+      "title": "Plan",
+      "prompt": "A short 2-day plan for Lisbon on a budget, as a list.",
+      "answer": "Here is a short, budget-friendly 2-day plan for Lisbon:\n\n*   **Day 1: The Historic Heart**\n    *   **Morning:** Start at **LX Factory** (cheap entry) for a quick, authentic breakfast and a walk through the converted industrial complex.\n    *   **Late Morning:** Walk to **Largo do Chão** and explore the **LX Market** for cheap, fresh fruit and snacks.\n    *   **Lunch:** Grab a *pastel de nata* (custard tart) at a small, unpretentious bakery near the market rather than a tourist trap.\n    *   **Afternoon:** Take a free bus (number 72) to **Belém**. Visit the **Jerónimos Monastery** (free entry) and walk along the river.\n    *   **Evening:** Walk back to the city center, grab a cheap *frango à caça* (grilled chicken) at a local *tasca*, and enjoy the nightlife in the **Baixa** district.\n\n*   **Day 2: Views and Vibes**\n    *   **Morning:** Head to **Santa Maria do Castelo** (free) and walk down the **Cais do",
+      "tokens": 260,
+      "truncated": true
+    },
+    {
+      "icon": "code",
+      "title": "Code",
+      "prompt": "A Python function that says whether a word is a palindrome. Code only.",
+      "answer": "```python\ndef is_palindrome(word: str) -> bool:\n    \"\"\"Return True if the given word is a palindrome, ignoring case and non-alphanumeric characters.\"\"\"\n    cleaned = ''.join(c.lower() for c in word if c.isalnum())\n    return cleaned == cleaned[::-1]\n```",
+      "tokens": 65,
+      "truncated": false
+    },
+    {
+      "icon": "mail",
+      "title": "Draft",
+      "prompt": "Write a three-line email moving a meeting to Thursday.",
+      "answer": "Subject: Rescheduling Our Meeting to Thursday\n\nHi [Name],\n\nCould we please move our meeting to Thursday instead?\n\nLet me know if this works for you.",
+      "tokens": 35,
+      "truncated": false
+    },
+    {
+      "icon": "check",
+      "title": "Proofread",
+      "prompt": "Fix the mistakes: \"their going to the cinema tomorow and than dinner\"",
+      "answer": "Here are the corrections for your sentence, along with an explanation of the errors:\n\n**Corrected Sentence:**\n> \"They are going to the cinema **tomorrow** and **then** dinner.\"\n\n### Breakdown of Mistakes:\n\n1.  **Subject Missing**: The original sentence starts with \"their\" (a possessive adjective), but it needs a subject pronoun like **\"They\"** or **\"We\"**.\n2.  **Verb Tense**: \"Going\" is incorrect here. You need the auxiliary verb **\"are\"** to form the present continuous tense (\"They **are** going\").\n3.  **Spelling**: \"tomorow\" is misspelled. It should be **\"tomorrow\"**.\n4.  **Spelling**: \"than\" is used for comparisons (e.g., \"better than\"). In this context, you need the sequence word **\"then\"** (e.g., \"first this, then that\").\n\n### Alternative Phrasing\nDepending on the exact meaning you want to convey, you could also say:\n\n*   \"They **are going** to the cinema **tomorrow** and **will have** dinner.\" (More formal)\n*   \"They **are going** to the cinema **tomorrow**",
+      "tokens": 260,
+      "truncated": true
+    },
+    {
+      "icon": "calc",
+      "title": "Calculate",
+      "prompt": "What is 15% of 240? Explain in one line.",
+      "answer": "15% of 240 is 36.",
+      "tokens": 14,
+      "truncated": false
+    },
+    {
+      "icon": "globe",
+      "title": "Translate",
+      "prompt": "Translate into Spanish: \"The library opens at nine and closes at dusk.\"",
+      "answer": "La biblioteca abre a las nueve y cierra al anochecer.",
+      "tokens": 15,
+      "truncated": false
+    },
+    {
+      "icon": "bulb",
+      "title": "Brainstorm",
+      "prompt": "Five names for a café with books. Just the list.",
+      "answer": "1. The Page Turner\n2. Ink & Leaf\n3. The Quiet Corner\n4. Book & Bean\n5. The Reading Room",
+      "tokens": 31,
+      "truncated": false
+    },
+    {
+      "icon": "table",
+      "title": "Organise",
+      "prompt": "Make a Markdown table with three planets and their number of moons.",
+      "answer": "| Planet | Number of Moons |\n| :--- | :--- |\n| Earth | 1 |\n| Mars | 2 |\n| Jupiter | 95 |",
+      "tokens": 39,
+      "truncated": false
+    }
+  ]
+}

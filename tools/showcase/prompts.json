@@ -1,0 +1,106 @@
+{
+  "es": [
+    {
+      "icon": "pen",
+      "title": "Escribir",
+      "prompt": "Escribe un haiku sobre la aurora boreal."
+    },
+    {
+      "icon": "sparkle",
+      "title": "Explicar",
+      "prompt": "Explícame la relatividad como si tuviera 10 años, en tres frases."
+    },
+    {
+      "icon": "map",
+      "title": "Planificar",
+      "prompt": "Plan breve de 2 días en Lisboa con poco presupuesto, en una lista."
+    },
+    {
+      "icon": "code",
+      "title": "Programar",
+      "prompt": "Función en Python que diga si una palabra es un palíndromo. Solo el código."
+    },
+    {
+      "icon": "mail",
+      "title": "Redactar",
+      "prompt": "Escribe un correo de tres líneas para aplazar una reunión al jueves."
+    },
+    {
+      "icon": "check",
+      "title": "Corregir",
+      "prompt": "Corrige este texto: «Ayer fuimos a la playa y nos lo pasemos muy bien, aunque hacia muchisimo calor.»"
+    },
+    {
+      "icon": "calc",
+      "title": "Calcular",
+      "prompt": "¿Cuánto es el 15 % de 240? Explica el cálculo en una línea."
+    },
+    {
+      "icon": "globe",
+      "title": "Traducir",
+      "prompt": "Traduce al inglés: «La biblioteca abre a las nueve y cierra al anochecer.»"
+    },
+    {
+      "icon": "bulb",
+      "title": "Idear",
+      "prompt": "Cinco nombres para una cafetería con libros. Solo la lista."
+    },
+    {
+      "icon": "table",
+      "title": "Ordenar",
+      "prompt": "Haz una tabla Markdown con tres planetas y su número de lunas."
+    }
+  ],
+  "en": [
+    {
+      "icon": "pen",
+      "title": "Write",
+      "prompt": "Write a haiku about the northern lights."
+    },
+    {
+      "icon": "sparkle",
+      "title": "Explain",
+      "prompt": "Explain relativity to a 10-year-old in three sentences."
+    },
+    {
+      "icon": "map",
+      "title": "Plan",
+      "prompt": "A short 2-day plan for Lisbon on a budget, as a list."
+    },
+    {
+      "icon": "code",
+      "title": "Code",
+      "prompt": "A Python function that says whether a word is a palindrome. Code only."
+    },
+    {
+      "icon": "mail",
+      "title": "Draft",
+      "prompt": "Write a three-line email moving a meeting to Thursday."
+    },
+    {
+      "icon": "check",
+      "title": "Proofread",
+      "prompt": "Fix the mistakes: \"their going to the cinema tomorow and than dinner\""
+    },
+    {
+      "icon": "calc",
+      "title": "Calculate",
+      "prompt": "What is 15% of 240? Explain in one line."
+    },
+    {
+      "icon": "globe",
+      "title": "Translate",
+      "prompt": "Translate into Spanish: \"The library opens at nine and closes at dusk.\""
+    },
+    {
+      "icon": "bulb",
+      "title": "Brainstorm",
+      "prompt": "Five names for a café with books. Just the list."
+    },
+    {
+      "icon": "table",
+      "title": "Organise",
+      "prompt": "Make a Markdown table with three planets and their number of moons."
+    }
+  ]
+}

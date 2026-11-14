@@ -404,7 +404,7 @@ function renderPicker() {
         'div',
         { class: 'opt-main' },
         h('div', { class: 'opt-title' }, h('strong', {}, x.name), h('span', { class: `tier ${x.tier}` }, tierLabel(x.tier)), x.id === rec ? h('span', { class: 'tag-rec' }, t('Para tu equipo')) : null),
-        h('div', { class: 'opt-meta' }, h('span', { class: `dot ${s.cls}` }), h('span', {}, s.label), h('span', {}, '·'), h('span', {}, x.license.name)),
+        h('div', { class: 'opt-meta' }, h('span', { class: `dot ${s.cls}` }), h('span', {}, s.label)),
         f.ok ? (f.warn === 'software' ? h('div', { class: 'opt-warn' }, t('Tu GPU es un adaptador por software: irá muy lento.')) : f.warn ? h('div', { class: 'opt-warn' }, t('Necesita una GPU potente; puede no caber en la tuya.')) : null) : h('div', { class: 'opt-warn' }, blockReason(f.why)),
       ),
       h('button', { type: 'button', class: 'icon-btn sm', title: t('Ficha del modelo'), 'aria-label': t('Ficha del modelo'), onclick: (e: Event) => (e.stopPropagation(), closePicker(), showCard(x)) }, icon('info', 16)),
@@ -1093,7 +1093,9 @@ async function boot() {
   $('btn-theme').addEventListener('click', () => {
     settings.theme = isDark() ? 'light' : 'dark';
     saveSettings();
-    applyTheme();
+    const d = document as Document & { startViewTransition?: (cb: () => void) => unknown };
+    if (d.startViewTransition && !matchMedia('(prefers-reduced-motion: reduce)').matches) d.startViewTransition(applyTheme);
+    else applyTheme();
   });
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme);
   $('btn-new').addEventListener('click', newConversation);
@@ -1131,6 +1133,14 @@ async function boot() {
   if (selected) {
     const c = cacheInfo.get(selected.id);
     if (c && isComplete(c) && gpu.ok) void loadModel(selected.id);
+  }
+  // Examples on the landing page open the chat with their prompt ready to send.
+  const q = new URLSearchParams(location.search).get('q');
+  if (q) {
+    el.input.value = q.slice(0, 2000);
+    autosize();
+    renderComposerState();
+    history.replaceState(null, '', location.pathname);
   }
   el.input.focus();
   document.documentElement.classList.add('ready');
