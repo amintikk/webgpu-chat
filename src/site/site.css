@@ -167,7 +167,7 @@ body.site > footer {
   color: var(--accent);
 }
 
-/* The stage: a desktop window and a phone, floating glass that leans towards the pointer. */
+/* The stage: the desktop app in floating glass that leans towards the pointer. */
 .stage {
   position: relative;
   max-width: 1080px;
@@ -191,18 +191,6 @@ body.site > footer {
 }
 .device.desktop {
   box-shadow: var(--glass-shine), var(--shadow), 0 60px 140px -50px color-mix(in srgb, var(--violet) 45%, transparent);
-}
-.device.phone {
-  position: absolute;
-  right: 0;
-  bottom: -40px;
-  width: min(22%, 230px);
-  padding: 6px;
-  border-radius: 34px;
-  box-shadow: var(--glass-shine), var(--shadow);
-}
-.device.phone img {
-  border-radius: 28px;
 }
 .device .dark {
   display: none;
@@ -677,11 +665,6 @@ table.data tr:last-child td {
   .stage {
     margin-top: 44px;
     padding: 0 16px;
-  }
-  .device.phone {
-    width: 34%;
-    right: 8px;
-    bottom: -28px;
   }
   section.block {
     padding: 84px 0;
