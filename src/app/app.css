@@ -2090,3 +2090,36 @@ dialog::backdrop {
   outline: 2px dashed color-mix(in oklab, var(--blue) 70%, transparent);
   outline-offset: 4px;
 }
+
+/* Notices: a compact card under the top bar (never over the composer), dark or light like the page,
+   with a small accent dot. Long texts wrap into a tidy block instead of a tall pill. */
+#toast {
+  top: calc(env(safe-area-inset-top, 0px) + 66px);
+  bottom: auto;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: max-content;
+  max-width: min(400px, calc(100vw - 32px));
+  padding: 11px 16px 11px 14px;
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--surface-solid) 96%, transparent);
+  border: 1px solid var(--glass-edge);
+  color: var(--text);
+  font-size: 13.5px;
+  line-height: 1.4;
+  box-shadow: var(--shadow);
+  transform: translate(-50%, -10px);
+}
+#toast::before {
+  content: '';
+  flex: none;
+  width: 7px;
+  height: 7px;
+  margin-top: 6px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--blue), var(--violet));
+}
+#toast.show {
+  transform: translate(-50%, 0);
+}

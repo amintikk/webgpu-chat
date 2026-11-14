@@ -1459,7 +1459,7 @@ addEventListener('beforeinstallprompt', (e) => {
 addEventListener('appinstalled', () => {
   installEvt = null;
   renderInstall();
-  toast(t('App instalada. Ábrela desde tu pantalla de inicio o el menú de aplicaciones.'));
+  toast(t('App instalada. La tienes en tu pantalla de inicio.'));
 });
 installBtn.addEventListener('click', async () => {
   if (installEvt) {

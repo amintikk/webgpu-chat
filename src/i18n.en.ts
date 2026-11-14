@@ -76,7 +76,7 @@ export const EN: Record<string, string> = {
   'Quitar': 'Remove',
   'Leyendo…': 'Reading…',
   '{n} caracteres': '{n} characters',
-  'App instalada. Ábrela desde tu pantalla de inicio o el menú de aplicaciones.': 'App installed. Open it from your home screen or apps menu.',
+  'App instalada. La tienes en tu pantalla de inicio.': 'App installed. You will find it on your home screen.',
   'Instalar la app': 'Install the app',
   'En Safari, toca el botón Compartir y luego «Añadir a pantalla de inicio». Se abrirá como una app y funcionará sin conexión.': 'In Safari, tap the Share button and then “Add to Home Screen”. It opens like an app and works offline.',
   'Se agotó el máximo de tokens mientras razonaba, antes de responder. Sube el máximo en Ajustes o desactiva Razonar y pulsa Regenerar.': 'The token limit ran out while reasoning, before the answer. Raise the limit in Settings or turn off Reasoning, then press Regenerate.',
