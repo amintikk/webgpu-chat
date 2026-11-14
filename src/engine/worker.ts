@@ -496,7 +496,11 @@ self.onmessage = (e: MessageEvent<ToWorker>) => {
       } else if (msg.type === 'bench') {
         await bench(msg.id);
       } else if (msg.type === 'count') {
-        post({ type: 'count', id: msg.id, tokens: tokenizer ? template(msg.messages, true, msg.reasoning).length : 0 });
+        // Some templates (Qwen) refuse a conversation without a user message, e.g. an empty chat with a system
+        // prompt: count it as if an empty user message were there, which is what the answer will add anyway.
+        const hasUser = msg.messages.some((m) => m.role === 'user');
+        const withUser: ChatMessage[] = hasUser ? msg.messages : [...msg.messages, { role: 'user', content: ' ' }];
+        post({ type: 'count', id: msg.id, tokens: tokenizer ? template(withUser, true, msg.reasoning).length : 0 });
       } else if (msg.type === 'reset') {
         await resetCaches();
       } else if (msg.type === 'unload') {
