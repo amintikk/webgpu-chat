@@ -224,7 +224,7 @@ a {
   border-radius: 50%;
   opacity: var(--au-alpha);
   will-change: transform;
-  /* Moods change only opacity, with a long fade: changing animation speed would make the light jump. */
+  /* Static places for reduced motion; the live loop (src/ui/aurora.ts) moves and fades them. */
   transition: opacity 2.4s var(--ease);
 }
 .aurora .band-a {
@@ -233,8 +233,6 @@ a {
   left: -14vmax;
   top: -22vmax;
   background: radial-gradient(closest-side, var(--blue), color-mix(in srgb, var(--blue) 35%, transparent) 55%, transparent);
-  translate: calc((var(--mx) - 0.5) * 7vmax) calc((var(--my) - 0.5) * 5vmax);
-  animation: drift-a 28s ease-in-out infinite alternate;
 }
 .aurora .band-b {
   width: 58vmax;
@@ -242,8 +240,6 @@ a {
   right: -18vmax;
   top: -14vmax;
   background: radial-gradient(closest-side, var(--violet), color-mix(in srgb, var(--violet) 35%, transparent) 55%, transparent);
-  translate: calc((var(--mx) - 0.5) * -6vmax) calc((var(--my) - 0.5) * 6vmax);
-  animation: drift-b 34s ease-in-out infinite alternate;
 }
 .aurora .band-c {
   width: 70vmax;
@@ -251,27 +247,10 @@ a {
   left: 10vmax;
   bottom: -30vmax;
   background: radial-gradient(closest-side, color-mix(in srgb, var(--blue) 60%, var(--violet)), transparent);
-  translate: calc((var(--mx) - 0.5) * 8vmax) calc((var(--my) - 0.5) * -4vmax);
-  animation: drift-c 25s ease-in-out infinite alternate;
   opacity: calc(var(--au-alpha) * 0.6);
 }
 .aurora .band-d {
   display: none;
-}
-@keyframes drift-a {
-  to {
-    transform: translate(16vmax, 7vmax) rotate(14deg) scale(1.12);
-  }
-}
-@keyframes drift-b {
-  to {
-    transform: translate(-14vmax, 10vmax) rotate(-18deg) scale(0.92);
-  }
-}
-@keyframes drift-c {
-  to {
-    transform: translate(12vmax, -9vmax) rotate(22deg) scale(1.16);
-  }
 }
 .aurora .grain {
   position: absolute;
@@ -283,15 +262,19 @@ a {
 .aurora.paused .band {
   animation-play-state: paused;
 }
-.aurora[data-mood='loading'] .band-c {
-  opacity: calc(var(--au-alpha) * 0.9);
+/* Live aurora: positioned and faded every frame by src/ui/aurora.ts. The container carries the theme's
+   base intensity; the loop multiplies it per field and per mood. */
+.aurora.live {
+  opacity: calc(var(--au-alpha) * 1.8);
+  transition: opacity 1.2s var(--ease);
 }
-.aurora[data-mood='thinking'] .band-b {
-  opacity: calc(var(--au-alpha) * 1.35);
-}
-.aurora[data-mood='writing'] .band-a,
-.aurora[data-mood='writing'] .band-c {
-  opacity: calc(var(--au-alpha) * 1.3);
+.aurora.live .band {
+  left: 0;
+  top: 0;
+  right: auto;
+  bottom: auto;
+  opacity: 0.55;
+  transition: none;
 }
 @media (prefers-reduced-motion: reduce) {
   .aurora .band {

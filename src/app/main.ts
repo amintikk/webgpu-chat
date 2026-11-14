@@ -7,7 +7,7 @@ import { AVAILABLE, MODELS, downloadBytes, modelById, type ModelId, type ModelIn
 import type { ChatMessage, GenOptions, GenStats } from '../engine/protocol.ts';
 import { lang, locale, localPath, t } from '../i18n.ts';
 import { $, fmtBytes, fmtDuration, fmtNum, h, toast } from '../ui/dom.ts';
-import { mountAurora, setMood, wireGlow } from '../ui/aurora.ts';
+import { mountAurora, pulseAurora, setMood, wireGlow } from '../ui/aurora.ts';
 import { hydrateIcons, icon } from '../ui/icons.ts';
 import { cacheStatus, deleteModel, deleteOrphans, isComplete, orphanBytes, storageEstimate, type CacheEntry } from './cache.ts';
 import { deleteConversation, listConversations, newId, saveConversation, titleFrom, type Conversation, type StoredMessage } from './db.ts';
@@ -59,6 +59,14 @@ const ms = (m: ModelInfo): ModelSettings => (settings.perModel[m.id] ??= default
 // State
 
 const engine = new Engine();
+
+/** The aurora's resting mood: 'typing' while the user is composing a message, otherwise 'idle'. */
+let typingTimer = 0;
+function restMood(): void {
+  if (generating || loading) return;
+  const composing = document.activeElement === el.input && el.input.value.trim().length > 0;
+  setMood(composing ? 'typing' : 'idle');
+}
 /** Development only (stripped from production builds): 4-bit weights with float32 math, for GPUs without shader-f16
  *  such as the SwiftShader software adapter used in automated tests. */
 const DEV_Q4 = import.meta.env.DEV && new URLSearchParams(location.search).has('q4');
@@ -521,7 +529,7 @@ async function loadModel(id: ModelId) {
     loading = null;
     showError(loadErrorText(msg, m));
   }
-  setMood('idle');
+  restMood();
   renderLoad();
   renderPicker();
   renderThreadIfEmpty();
@@ -696,6 +704,7 @@ async function respond() {
     const r = await engine.generate(chat, opts, {
       onDelta: (d) => {
         setMood(d.thinking || !d.content ? 'thinking' : 'writing');
+        pulseAurora(0.02);
         pending = d;
         if (!raf) raf = requestAnimationFrame(paint);
       },
@@ -710,7 +719,7 @@ async function respond() {
   }
   cancelAnimationFrame(raf);
   generating = false;
-  setMood('idle');
+  restMood();
   c.messages.push(msg);
   await persist(c);
   if (current?.id === c.id) {
@@ -726,10 +735,18 @@ async function respond() {
 }
 
 el.input.addEventListener('input', () => {
+  if (!generating && !loading) {
+    setMood(el.input.value.trim() ? 'typing' : 'idle');
+    pulseAurora(0.05);
+    // A pause in typing lets the light settle back.
+    clearTimeout(typingTimer);
+    typingTimer = window.setTimeout(() => !generating && !loading && setMood('idle'), 2500);
+  }
   autosize();
   renderComposerState();
   scheduleContext();
 });
+el.input.addEventListener('blur', () => restMood());
 el.input.addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
     e.preventDefault();
@@ -1226,4 +1243,4 @@ async function boot() {
 void boot();
 
 // Expose a tiny hook for the automated benchmark (tools/bench): only reads timings, never data.
-(window as unknown as Record<string, unknown>).__chat = { engine, lang, localPath };
+(window as unknown as Record<string, unknown>).__chat = { engine, lang, localPath, setMood };
