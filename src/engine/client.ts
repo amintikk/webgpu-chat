@@ -2,6 +2,7 @@
 import type { ModelId } from './models.ts';
 import type { BenchResult, ChatMessage, FromWorker, GenOptions, GenStats, ToWorker } from './protocol.ts';
 import { lang } from '../i18n.ts';
+import { dlog } from '../ui/debug.ts';
 
 export interface LoadEvents {
   onProgress?: (loaded: number, total: number) => void;
@@ -93,6 +94,9 @@ export class Engine {
       }
       case 'unloaded':
         this.loaded = null;
+        break;
+      case 'log':
+        dlog(`[worker] ${m.text}`);
         break;
     }
   }

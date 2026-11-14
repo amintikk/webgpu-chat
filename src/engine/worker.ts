@@ -51,7 +51,10 @@ const pinnedFetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
     try {
       cache = 'caches' in globalThis ? await caches.open('transformers-cache') : undefined;
       const hit = await cache?.match(pinned);
-      if (hit) return hit;
+      if (hit) {
+        dbg(`${m[3]}: desde la caché`);
+        return hit;
+      }
     } catch {
       /* cache unavailable: fall through to the network */
     }
@@ -82,6 +85,7 @@ async function downloadToCache(cache: Cache, url: string, file: string, init?: R
     const res = await realFetch(url, init);
     if (!res.ok) return res;
     const total = Number(res.headers.get('content-length')) || 0;
+    dbg(`${file}: descarga a la caché en streaming (${(total / 1e6).toFixed(0)} MB)`);
     if (res.status !== 200 || !res.body || !total) {
       void res.body?.cancel();
       return null;
@@ -106,6 +110,7 @@ async function downloadToCache(cache: Cache, url: string, file: string, init?: R
     return (await cache.match(url)) ?? null;
   } catch (e) {
     console.warn('[worker] streaming to the cache failed, downloading in memory:', file, e);
+    dbg(`${file}: el streaming falló, se descarga en memoria: ${e instanceof Error ? `${e.name}: ${e.message}` : String(e)}`);
     return null;
   }
 }
@@ -115,6 +120,10 @@ async function downloadToCache(cache: Cache, url: string, file: string, init?: R
 globalThis.fetch = pinnedFetch;
 
 const post = (m: FromWorker) => (self as unknown as Worker).postMessage(m);
+/** Full text of an error, stack included, for the debug record. */
+const errText = (e: unknown): string => (e instanceof Error ? `${e.name}: ${e.message}\n${e.stack ?? ''}` : String(e));
+/** Debug mode: a line for the page's record (it keeps only what the page asked for). */
+const dbg = (text: string) => post({ type: 'log', text });
 
 // ---------------------------------------------------------------------------------------------
 // Cache reuse between turns.
@@ -206,19 +215,30 @@ async function load(id: string, dtypeOverride?: string, device = 'webgpu') {
   };
   onNetProgress = report;
   const progress = (p: Any) => {
+    if (p.status === 'initiate' && p.file) dbg(`${p.file}: inicio`);
     if (p.status === 'progress' && p.file) {
       report(p.file, p.loaded ?? 0, p.total);
     } else if (p.status === 'done' && p.file) {
+      dbg(`${p.file}: listo`);
       const s = totals.get(p.file);
       if (s) s.loaded = s.total;
     }
   };
+  dbg(`cargar ${m.id} (${m.cls}) · dispositivo ${device} · dtype ${JSON.stringify(dtypeOverride ?? m.dtype)}`);
   post({ type: 'status', stage: 'download' });
   const opts = { revision: m.revision, progress_callback: progress };
   tokenizer = await AutoTokenizer.from_pretrained(m.repo, opts);
   const cls = CLASSES[m.cls];
   const dtype = dtypeOverride ? (typeof m.dtype === 'string' ? dtypeOverride : Object.fromEntries(Object.keys(m.dtype).map((k) => [k, dtypeOverride]))) : m.dtype;
-  model = await cls.from_pretrained(m.repo, { ...opts, dtype, device });
+  dbg('descargas listas; creando sesiones ONNX (pesos a memoria y GPU)');
+  const tSes = performance.now();
+  try {
+    model = await cls.from_pretrained(m.repo, { ...opts, dtype, device });
+  } catch (e) {
+    dbg(`creación de sesiones falló: ${errText(e)}`);
+    throw e;
+  }
+  dbg(`sesiones creadas en ${Math.round(performance.now() - tSes)} ms`);
   // Transformers.js 4.3 (Qwen3-VL family): continuing from a cache sets `pixel_values = null`, and a
   // multi-token continuation then treats null as an image and calls the vision encoder, which a text-only
   // load does not have. Drop the null so the turn is processed as text.
@@ -233,7 +253,9 @@ async function load(id: string, dtypeOverride?: string, device = 'webgpu') {
   // One short forward pass compiles the GPU kernels now rather than on the first message.
   post({ type: 'status', stage: 'warmup' });
   const ids = tokenizer.apply_chat_template([{ role: 'user', content: 'Hi' }], { add_generation_prompt: true, return_dict: true });
+  const tWarm = performance.now();
   await model.generate({ ...ids, max_new_tokens: 1, do_sample: false });
+  dbg(`primera pasada (compilar kernels) en ${Math.round(performance.now() - tWarm)} ms`);
   post({ type: 'ready', model: m.id, loadMs: performance.now() - t0 });
 }
 
@@ -483,6 +505,7 @@ self.onmessage = (e: MessageEvent<ToWorker>) => {
       }
     } catch (err) {
       console.error(err);
+      dbg(`ERROR en ${msg.type}: ${errText(err)}`);
       const message = err instanceof Error ? err.message : String(err);
       post({ type: 'error', id: 'id' in msg ? msg.id : undefined, message, stage: msg.type === 'load' ? 'load' : 'generate' });
       if (msg.type === 'generate') await resetCaches().catch(() => {});

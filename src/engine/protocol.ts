@@ -56,4 +56,6 @@ export type FromWorker =
   | { type: 'count'; id: number; tokens: number }
   | { type: 'bench'; id: number; result: BenchResult }
   | { type: 'error'; id?: number; message: string; stage: 'load' | 'generate' }
-  | { type: 'unloaded' };
+  | { type: 'unloaded' }
+  /** Debug mode only: one line for the page's record. */
+  | { type: 'log'; text: string };

@@ -15,6 +15,7 @@ import { card, tierLabel } from './modelcards.ts';
 import { level, score, wait, type Level, type Wait } from './score.ts';
 import { copyButton, renderMarkdown } from './render.ts';
 import { ACCEPT, readAttachment, withAttachments, type Attachment } from './attach.ts';
+import { applyUrlDebug, clearDebug, debugOn, dlog, memoryText, reportText, setDebug, startMemoryWatch, stopMemoryWatch, watchErrors } from '../ui/debug.ts';
 
 // ---------------------------------------------------------------------------------------------
 // Settings (localStorage: preferences only; conversations are in IndexedDB)
@@ -565,15 +566,24 @@ async function loadModel(id: ModelId) {
   renderLoad();
   renderComposerState();
   markLoading(id);
+  dlog(`carga de ${m.name} (${id}) · ${memoryText()}`);
+  startMemoryWatch(`${m.name}`);
+  let lastDecile = -1;
   try {
     const t0 = performance.now();
     await engine.load(id, {
       onProgress: (l, tot) => {
         if (loading) Object.assign(loading, { loaded: l, total: tot, stage: 'download' });
         setAuroraProgress(tot ? l / tot : 0);
+        const decile = tot ? Math.floor((l / tot) * 10) : -1;
+        if (decile !== lastDecile) {
+          lastDecile = decile;
+          dlog(`descarga ${decile * 10}% (${fmtBytes(l)} de ${fmtBytes(tot)})`);
+        }
         renderLoad();
       },
       onStage: (s) => {
+        dlog(`etapa: ${s}`);
         if (loading) loading.stage = s;
         if (s !== 'download') setAuroraProgress(1);
         renderLoad();
@@ -581,11 +591,16 @@ async function loadModel(id: ModelId) {
     }, DEV_Q4 ? 'q4' : undefined);
     loading = null;
     markLoading(null);
+    dlog(`CARGADO en ${fmtDuration(performance.now() - t0)} · ${memoryText()}`);
+    stopMemoryWatch();
     cacheInfo.set(id, await cacheStatus(m));
     toast(t('{m} listo en {d}', { m: m.name, d: fmtDuration(performance.now() - t0) }));
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     if (msg === 'superseded') return;
+    dlog(`ERROR al cargar: ${e instanceof Error ? `${e.name}: ${e.message}\n${e.stack ?? ''}` : msg}`);
+    dlog(`memoria en el error · ${memoryText()}`);
+    stopMemoryWatch();
     loading = null;
     markLoading(null);
     showError(loadErrorText(msg, m));
@@ -1059,7 +1074,75 @@ function renderSettings() {
       t('Valores recomendados'),
     ),
   );
+  body.append(debugBlock());
   renderContext();
+}
+
+/** Settings block for the debug mode: a switch, the record and a copyable report. */
+function debugBlock(): HTMLElement {
+  const sw = h('input', { type: 'checkbox', id: 'debug-switch' }) as HTMLInputElement;
+  sw.checked = debugOn();
+  sw.addEventListener('change', () => {
+    setDebug(sw.checked);
+    if (sw.checked) {
+      dlog(`modo depuración activado · ${memoryText()}`);
+      watchErrors();
+      toast(t('Modo depuración activado. Carga el modelo y luego copia el informe.'));
+    } else {
+      toast(t('Modo depuración desactivado.'));
+    }
+    view.hidden = !sw.checked;
+  });
+  const view = h(
+    'div',
+    { class: 'debug-tools', hidden: !sw.checked },
+    h('button', { type: 'button', class: 'btn small', onclick: () => void showDebugReport() }, icon('code', 15), t('Ver informe')),
+    h('button', { type: 'button', class: 'btn small ghost', onclick: () => void copyDebugReport() }, icon('copy', 15), t('Copiar informe')),
+    h('button', { type: 'button', class: 'btn small ghost', onclick: () => (clearDebug(), toast(t('Registro borrado.'))) }, t('Borrar registro')),
+  );
+  return h(
+    'div',
+    { class: 'field debug-block' },
+    h('label', { class: 'check', for: 'debug-switch' }, sw, h('span', {}, t('Modo depuración'))),
+    h('p', { class: 'hint' }, t('Anota cada paso de la carga del modelo (descarga, caché, memoria, errores) en esta página. No se envía nada: copia el informe y pásalo a quien te ayude.')),
+    view,
+  );
+}
+
+async function copyDebugReport() {
+  const text = await reportText();
+  try {
+    await navigator.clipboard.writeText(text);
+    toast(t('Informe copiado.'));
+  } catch {
+    void showDebugReport();
+    toast(t('No se pudo copiar: selecciona el texto del informe.'));
+  }
+}
+
+async function showDebugReport() {
+  const text = await reportText();
+  const d = h('dialog', { class: 'debug-dialog' }) as HTMLDialogElement;
+  const pre = h('pre', { class: 'debug-pre' }, text);
+  const close = () => d.close();
+  d.replaceChildren(
+    h(
+      'div',
+      { class: 'dlg-body' },
+      h('h2', {}, t('Informe de depuración')),
+      h('p', { class: 'hint' }, t('Cópialo tal cual y pégalo en el mensaje. Así se ve qué ha pasado en cada paso.')),
+      pre,
+      h(
+        'div',
+        { class: 'dlg-actions' },
+        h('button', { type: 'button', class: 'btn ghost', onclick: close }, t('Cerrar')),
+        h('button', { type: 'button', class: 'btn primary', onclick: () => void copyDebugReport() }, t('Copiar informe')),
+      ),
+    ),
+  );
+  d.addEventListener('close', () => d.remove());
+  document.body.append(d);
+  d.showModal();
 }
 
 function setPanel(open: boolean) {
@@ -1409,8 +1492,18 @@ async function boot() {
 
   conversations = await listConversations().catch(() => []);
   renderList();
+  applyUrlDebug();
+  if (debugOn()) watchErrors();
   gpu = await probeGpu();
   if (DEV_Q4 && gpu.reason === 'no-f16') gpu = { ...gpu, ok: true, f16: true, reason: undefined };
+  if (debugOn()) {
+    dlog(`página abierta · ${memoryText()}`);
+    dlog(
+      gpu.ok
+        ? `GPU: ${gpu.vendor} ${gpu.architecture} ${gpu.description} · f16 ${gpu.f16 ? 'sí' : 'no'} · maxBuffer ${fmtBytes(gpu.maxBufferSize)} · maxStorage ${fmtBytes(gpu.maxStorageBufferBindingSize)} · RAM ${gpu.deviceMemory || 'n/d'} GB · móvil ${gpu.mobile ? 'sí' : 'no'}`
+        : `GPU: no disponible (${gpu.reason ?? 'desconocido'}) ${gpu.error ?? ''}`,
+    );
+  }
   await refreshCache();
   const rec = recommend(gpu);
   // ?model=<id> (links from the model pages) picks that model when the device can run it.
