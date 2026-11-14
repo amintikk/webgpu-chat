@@ -7,7 +7,7 @@ import { AVAILABLE, MODELS, downloadBytes, modelById, type ModelId, type ModelIn
 import type { ChatMessage, GenOptions, GenStats } from '../engine/protocol.ts';
 import { lang, locale, localPath, t } from '../i18n.ts';
 import { $, fmtBytes, fmtDuration, fmtNum, h, toast } from '../ui/dom.ts';
-import { mountAurora, pulseAurora, setMood, wireGlow } from '../ui/aurora.ts';
+import { mountAurora, pulseAurora, setAuroraProgress, setMood, wireGlow } from '../ui/aurora.ts';
 import { hydrateIcons, icon } from '../ui/icons.ts';
 import { cacheStatus, deleteModel, deleteOrphans, isComplete, orphanBytes, storageEstimate, type CacheEntry } from './cache.ts';
 import { deleteConversation, listConversations, newId, saveConversation, titleFrom, type Conversation, type StoredMessage } from './db.ts';
@@ -558,6 +558,7 @@ async function loadModel(id: ModelId) {
     /* best effort */
   }
   loading = { model: id, loaded: 0, total: downloadBytes(m), stage: 'download' };
+  setAuroraProgress(0);
   setMood('loading');
   renderPicker();
   renderThreadIfEmpty();
@@ -569,10 +570,12 @@ async function loadModel(id: ModelId) {
     await engine.load(id, {
       onProgress: (l, tot) => {
         if (loading) Object.assign(loading, { loaded: l, total: tot, stage: 'download' });
+        setAuroraProgress(tot ? l / tot : 0);
         renderLoad();
       },
       onStage: (s) => {
         if (loading) loading.stage = s;
+        if (s !== 'download') setAuroraProgress(1);
         renderLoad();
       },
     }, DEV_Q4 ? 'q4' : undefined);
@@ -1362,7 +1365,8 @@ function renderOnline() {
 }
 
 async function boot() {
-  mountAurora();
+  // Calmer than on the landing page: the chat is for reading.
+  mountAurora({ strength: 0.62 });
   renderOnline();
   addEventListener('online', renderOnline);
   addEventListener('offline', renderOnline);
@@ -1438,7 +1442,7 @@ async function boot() {
 void boot();
 
 // Expose a tiny hook for the automated benchmark (tools/bench): only reads timings, never data.
-(window as unknown as Record<string, unknown>).__chat = { engine, lang, localPath, setMood };
+(window as unknown as Record<string, unknown>).__chat = { engine, lang, localPath, setMood, setAuroraProgress };
 
 // Offline support (production build only): the service worker keeps the site available with no connection.
 // Install as an app. Chrome and Edge (desktop and Android) offer it through `beforeinstallprompt`; Safari on
