@@ -39,7 +39,7 @@ export interface BenchResult {
 }
 
 export type ToWorker =
-  | { type: 'load'; model: ModelId; lang: 'es' | 'en'; dtype?: string }
+  | { type: 'load'; model: ModelId; lang: 'es' | 'en'; dtype?: string; /** Tests only (Node): 'cpu'. */ device?: string }
   | { type: 'generate'; id: number; messages: ChatMessage[]; options: GenOptions }
   | { type: 'count'; id: number; messages: ChatMessage[]; reasoning: boolean }
   | { type: 'bench'; id: number }

@@ -29,8 +29,10 @@ env.useBrowserCache = true;
 const onnx = (env.backends as Any).onnx;
 // The WebGPU bundle of ONNX Runtime already contains its JavaScript glue; only the .wasm binary is fetched, from
 // this site (the default points to a CDN, which the Content-Security-Policy blocks).
-onnx.wasm.wasmPaths = { wasm: '/ort/ort-wasm-simd-threaded.asyncify.wasm' };
-onnx.wasm.numThreads = 1;
+if (onnx?.wasm) {
+  onnx.wasm.wasmPaths = { wasm: '/ort/ort-wasm-simd-threaded.asyncify.wasm' };
+  onnx.wasm.numThreads = 1;
+}
 
 const CLASSES: Record<string, Any> = { Lfm3ForCausalLM, Qwen3_5ForCausalLM, Gemma4ForCausalLM };
 
@@ -99,7 +101,7 @@ async function resetCaches() {
 
 // ---------------------------------------------------------------------------------------------
 
-async function load(id: string, dtypeOverride?: string) {
+async function load(id: string, dtypeOverride?: string, device = 'webgpu') {
   const m = modelById(id);
   if (!m) throw new Error(`Unknown model ${id}`);
   if (info?.id === m.id && model) {
@@ -132,7 +134,17 @@ async function load(id: string, dtypeOverride?: string) {
   tokenizer = await AutoTokenizer.from_pretrained(m.repo, opts);
   const cls = CLASSES[m.cls];
   const dtype = dtypeOverride ? (typeof m.dtype === 'string' ? dtypeOverride : Object.fromEntries(Object.keys(m.dtype).map((k) => [k, dtypeOverride]))) : m.dtype;
-  model = await cls.from_pretrained(m.repo, { ...opts, dtype, device: 'webgpu' });
+  model = await cls.from_pretrained(m.repo, { ...opts, dtype, device });
+  // Transformers.js 4.3 (Qwen3-VL family): continuing from a cache sets `pixel_values = null`, and a
+  // multi-token continuation then treats null as an image and calls the vision encoder, which a text-only
+  // load does not have. Drop the null so the turn is processed as text.
+  const prepare = model.prepare_inputs_for_generation?.bind(model);
+  if (prepare)
+    model.prepare_inputs_for_generation = (...a: Any[]) => {
+      const inputs = prepare(...a);
+      if (inputs && inputs.pixel_values == null) delete inputs.pixel_values;
+      return inputs;
+    };
   info = m;
   // One short forward pass compiles the GPU kernels now rather than on the first message.
   post({ type: 'status', stage: 'warmup' });
@@ -151,13 +163,18 @@ function template(messages: ChatMessage[], generationPrompt: boolean, reasoning:
   const msgs = messages.map((m) =>
     m.role === 'assistant' && m.reasoning ? { role: m.role, content: m.content, reasoning_content: m.reasoning } : { role: m.role, content: m.content },
   );
-  const ids = tokenizer.apply_chat_template(msgs, {
+  const out = tokenizer.apply_chat_template(msgs, {
     add_generation_prompt: generationPrompt,
     tokenize: true,
     return_tensor: false,
     enable_thinking: reasoning,
   });
-  return Array.from(ids as ArrayLike<number>, Number);
+  // Transformers.js 4.3 returns { input_ids, attention_mask }; older versions a plain or nested array.
+  let ids: Any = out && !Array.isArray(out) && 'input_ids' in out ? out.input_ids : out;
+  if (Array.isArray(ids) && Array.isArray(ids[0])) ids = ids[0];
+  const list = Array.from(ids as ArrayLike<number>, Number);
+  if (!list.length) throw new Error('The chat template produced no tokens');
+  return list;
 }
 
 async function prefill(state: CacheState | null, ids: number[]): Promise<CacheState> {
@@ -178,8 +195,10 @@ async function prefill(state: CacheState | null, ids: number[]): Promise<CacheSt
 class DeltaStreamer extends BaseStreamer {
   ids: number[] = [];
   first = 0;
-  constructor(private onToken: (ids: number[]) => void) {
+  private onToken: (ids: number[]) => void;
+  constructor(onToken: (ids: number[]) => void) {
     super();
+    this.onToken = onToken;
   }
   put(value: Any) {
     const row = value[0] ?? value;
@@ -315,8 +334,9 @@ async function bench(id: number) {
 let specialCache: string[] | null = null;
 function specials(): string[] {
   if (!specialCache) {
-    const added: Any[] = tokenizer?.added_tokens ?? [];
-    specialCache = added.filter((t) => t.special).map((t) => String(t.content));
+    // Removed from the text the user sees, after the reasoning markers have been used to split it.
+    const list: Any[] = tokenizer?.all_special_tokens ?? tokenizer?._tokenizer?.added_tokens?.filter((t: Any) => t.special).map((t: Any) => t.content) ?? [];
+    specialCache = list.map(String).filter(Boolean);
   }
   return specialCache;
 }
@@ -332,7 +352,7 @@ self.onmessage = (e: MessageEvent<ToWorker>) => {
     try {
       if (msg.type === 'load') {
         specialCache = null;
-        await load(msg.model, msg.dtype);
+        await load(msg.model, msg.dtype, msg.device);
       } else if (msg.type === 'generate') {
         await generate(msg.id, msg.messages, msg.options);
       } else if (msg.type === 'bench') {

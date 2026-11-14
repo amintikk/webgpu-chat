@@ -1,0 +1,25 @@
+{
+  "model": "qwen3.5-4b",
+  "repo": "onnx-community/Qwen3.5-4B-ONNX",
+  "revision": "23ac3352f288351eddcdf141b32f4f66587f7e2d",
+  "dtype": "q4f16",
+  "device": "cpu (onnxruntime-node)",
+  "decoding": "greedy, reasoning off",
+  "max_new_tokens": 768,
+  "answers": [
+    {
+      "id": "chat-es-1",
+      "answer": "1. **Empieza lento**: No te fuerces; corre poco y con frecuencia para evitar lesiones.\n2. **Escucha a tu cuerpo**: Descansa si sientes dolor o agotamiento excesivo.\n3. **Varía tu rutina**: Alterna entre correr, caminar y ejercicios de fuerza para mantener la motivación y prevenir lesiones.",
+      "tokens": 73,
+      "ms": 100960,
+      "truncated": false
+    },
+    {
+      "id": "chat-es-2",
+      "answer": "Asunto: Reporte de goteo en el grifo de la cocina\n\nEstimado/a [Nombre del casero]:\n\nEspero que se encuentre bien.\n\nLe escribo para informarle que he notado que el grifo de la cocina está goteando. Le agradecería mucho si pudiera revisar el asunto y realizar el arreglo necesario a la brevedad posible.\n\nQuedo atento/a a cualquier novedad.\n\nSaludos cordiales,\n\n[Tu nombre]",
+      "tokens": 102,
+      "ms": 201868,
+      "truncated": false
+    }
+  ]
+}
