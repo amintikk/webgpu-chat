@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>WebGPU Chat · Chat con IA privado que funciona en tu navegador</title>
+    <meta name="description" content="Chatea con modelos de lenguaje abiertos (LFM3, Qwen3.5) que se ejecutan enteros en tu navegador con WebGPU. Sin cuenta ni servidor: tus conversaciones no salen de tu equipo." />
+    <link rel="canonical" href="https://llm.aminox.dev/" />
+    <link rel="alternate" hreflang="es" href="https://llm.aminox.dev/" />
+    <link rel="alternate" hreflang="en" href="https://llm.aminox.dev/en/" />
+    <link rel="alternate" hreflang="x-default" href="https://llm.aminox.dev/en/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="WebGPU Chat · Chat con IA privado en tu navegador" />
+    <meta property="og:description" content="Modelos de lenguaje abiertos ejecutándose en tu propio equipo con WebGPU. Tus conversaciones no salen del navegador." />
+    <meta property="og:url" content="https://llm.aminox.dev/" />
+    <meta property="og:image" content="https://llm.aminox.dev/shots/app-light.png" />
+    <meta property="og:locale" content="es_ES" />
+    <meta property="og:locale:alternate" content="en_US" />
+    <meta name="color-scheme" content="light dark" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <script src="/theme.js"></script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "WebGPU Chat",
+        "url": "https://llm.aminox.dev/",
+        "applicationCategory": "UtilitiesApplication",
+        "operatingSystem": "Navegador web con WebGPU",
+        "inLanguage": ["es", "en"],
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "EUR" },
+        "license": "https://opensource.org/licenses/MIT",
+        "codeRepository": "https://github.com/amintikk/webgpu-chat",
+        "author": { "@type": "Person", "name": "Amin Tahtah Toumi" }
+      }
+    </script>
+  </head>
+  <body class="site">
+    <!--#header-->
+    <main>
+      <section class="hero">
+        <div class="wrap">
+          <span class="eyebrow"><i data-icon="lock" data-size="14"></i>Tus conversaciones no salen de tu equipo</span>
+          <h1>Un chat con IA que funciona dentro de tu navegador</h1>
+          <p class="lead">
+            WebGPU Chat descarga un modelo de lenguaje abierto una sola vez y lo ejecuta en tu propia tarjeta gráfica. No hay cuenta, ni servidor que lea lo que escribes, ni analítica.
+          </p>
+          <div class="hero-cta">
+            <a class="btn primary" href="/app/">Abrir el chat<i data-icon="arrowRight" data-size="16"></i></a>
+            <a class="btn" href="#modelos">Ver los modelos</a>
+          </div>
+          <div class="gpu-check" id="gpu-check" aria-live="polite"></div>
+          <div class="shot">
+            <img class="light" src="/shots/app-light.png" width="1600" height="1000" alt="La aplicación de chat con una conversación sobre WebGPU, en tema claro" />
+            <img class="dark" src="/shots/app-dark.png" width="1600" height="1000" alt="La aplicación de chat en tema oscuro" loading="lazy" />
+          </div>
+        </div>
+      </section>
+
+      <section class="block" id="privacidad">
+        <div class="wrap">
+          <h2>Privado por cómo está hecho, no por una promesa</h2>
+          <p class="section-lead">La web solo entrega archivos estáticos. Todo el cálculo ocurre en tu equipo, y el navegador impide a la página conectarse a otros sitios que no sean ella misma y Hugging Face, de donde se descargan los modelos.</p>
+          <div class="points">
+            <div class="point">
+              <i data-icon="shield" data-size="22"></i>
+              <h3>Nada sale del navegador</h3>
+              <p>Los mensajes, las respuestas y el historial se quedan en el almacenamiento de tu navegador. Puedes borrarlos cuando quieras.</p>
+            </div>
+            <div class="point">
+              <i data-icon="wifiOff" data-size="22"></i>
+              <h3>Funciona sin conexión</h3>
+              <p>Tras la primera descarga, el modelo queda guardado en la caché del navegador y puedes chatear sin internet.</p>
+            </div>
+            <div class="point">
+              <i data-icon="code" data-size="22"></i>
+              <h3>Código abierto</h3>
+              <p>El código está en GitHub con licencia MIT, y los modelos son abiertos. Puedes comprobar qué hace y alojarlo tú.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="block" id="modelos">
+        <div class="wrap">
+          <h2>Tres modelos, según tu equipo</h2>
+          <p class="section-lead">La app comprueba tu GPU, te recomienda el modelo que mejor encaja y bloquea los que no caben. Se descargan directamente de Hugging Face, en una versión fija y verificada.</p>
+          <div class="models">
+            <article class="model">
+              <div class="model-head"><h3>LFM3 1.7B</h3><span class="tier">Ligero</span></div>
+              <dl class="facts">
+                <dt>Autor</dt><dd>Liquid AI</dd>
+                <dt>Descarga</dt><dd>1,1 GB</dd>
+                <dt>Equipo</dt><dd>~2 GB de memoria gráfica</dd>
+                <dt>Licencia</dt><dd>LFM Open License v1.0</dd>
+              </dl>
+              <h4>Qué hace bien</h4>
+              <ul><li>Respuestas rápidas incluso con gráficas integradas.</li><li>Reescribir, resumir, traducir y extraer datos.</li></ul>
+              <h4>Límites</h4>
+              <ul><li>Sabe pocos datos del mundo y los inventa con facilidad.</li><li>Flojo en razonamiento largo y programación.</li></ul>
+              <details><summary>Licencia</summary><p>Uso y redistribución libres; el uso comercial solo está permitido a entidades con menos de 10 millones de dólares de ingresos anuales. <a href="/licencias/#lfm3">Texto completo</a>.</p></details>
+            </article>
+            <article class="model featured">
+              <div class="model-head"><h3>Qwen3.5 4B</h3><span class="tier recommended">Recomendado</span></div>
+              <dl class="facts">
+                <dt>Autor</dt><dd>Qwen (Alibaba Cloud)</dd>
+                <dt>Descarga</dt><dd>2,8 GB</dd>
+                <dt>Equipo</dt><dd>~4 GB de memoria gráfica</dd>
+                <dt>Licencia</dt><dd>Apache 2.0</dd>
+              </dl>
+              <h4>Qué hace bien</h4>
+              <ul><li>El mejor equilibrio entre calidad y velocidad.</li><li>Explicaciones y programación de complejidad media.</li><li>Modo de razonamiento para lógica y matemáticas.</li></ul>
+              <h4>Límites</h4>
+              <ul><li>Más lento; el razonamiento alarga mucho las respuestas.</li><li>Aquí solo trabaja con texto.</li></ul>
+              <details><summary>Licencia</summary><p>Apache 2.0: uso libre, también comercial, conservando el aviso de licencia.</p></details>
+            </article>
+            <article class="model" id="modelo-maximo">
+              <div class="model-head"><h3>Gemma 4 12B</h3><span class="tier">Máximo</span></div>
+              <dl class="facts">
+                <dt>Autor</dt><dd>Google DeepMind</dd>
+                <dt>Descarga</dt><dd>~8 GB</dd>
+                <dt>Equipo</dt><dd>GPU con 10 GB o más</dd>
+                <dt>Licencia</dt><dd>Apache 2.0</dd>
+              </dl>
+              <h4>Qué hace bien</h4>
+              <ul><li>Respuestas más completas y precisas.</li><li>Redacción, resúmenes largos y programación.</li></ul>
+              <h4>Límites</h4>
+              <ul><li>Necesita una GPU potente y una descarga grande.</li><li>Exportación propia cuantizada a 4 bits, validada frente al original.</li></ul>
+              <details><summary>Licencia</summary><p>Apache 2.0: uso libre, también comercial, conservando el aviso de licencia.</p></details>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="block" id="medidas">
+        <div class="wrap">
+          <h2>Pruebas y medidas</h2>
+          <p class="section-lead">Cada modelo se ha pasado por una batería propia de 30 preguntas en español e inglés (conversación, código y razonamiento). Respuestas y notas completas en el <a href="https://github.com/amintikk/webgpu-chat/tree/main/results">repositorio</a>.</p>
+          <!--#medidas-->
+        </div>
+      </section>
+
+      <section class="block" id="como-funciona">
+        <div class="wrap">
+          <h2>Cómo funciona</h2>
+          <p class="section-lead">Sin servidor de inferencia: la web es un conjunto de archivos estáticos y tu navegador hace el resto.</p>
+          <div class="steps">
+            <div class="step"><h3>Comprueba tu GPU</h3><p>Lee las capacidades de WebGPU de tu tarjeta (números de 16 bits, tamaño máximo de búfer) y te recomienda un modelo.</p></div>
+            <div class="step"><h3>Descarga el modelo una vez</h3><p>Los pesos, cuantizados a 4 bits en formato ONNX, se bajan de Hugging Face con la revisión fijada y se guardan en la caché del navegador.</p></div>
+            <div class="step"><h3>Lo ejecuta en tu GPU</h3><p>Transformers.js y ONNX Runtime Web ejecutan el modelo con WebGPU en un hilo aparte, con la plantilla de chat oficial de cada modelo.</p></div>
+            <div class="step"><h3>Reutiliza lo ya calculado</h3><p>Entre mensajes se conserva la caché de claves y valores, así que cada turno solo procesa lo nuevo y responde antes.</p></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="block">
+        <div class="wrap">
+          <div class="warn-box">
+            <i data-icon="alert" data-size="22"></i>
+            <div>
+              <h3>Son modelos pequeños y pueden equivocarse</h3>
+              <p>Caben en un ordenador personal a cambio de saber menos que los grandes modelos comerciales. Pueden inventar datos, nombres o cifras con total seguridad. Comprueba lo importante y no los uses para decisiones médicas, legales o financieras.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="block faq" id="preguntas">
+        <div class="wrap narrow">
+          <h2>Preguntas frecuentes</h2>
+          <details>
+            <summary>¿De verdad no se envía nada?</summary>
+            <p>Tus mensajes no salen del navegador. Lo único que se conecta a internet es la descarga de los modelos desde Hugging Face, que, como cualquier servidor, ve tu dirección IP. La web no tiene analítica ni cookies, y su política de seguridad (CSP) solo le permite conectarse a sí misma y a Hugging Face. Puedes comprobarlo en la pestaña «Red» de las herramientas de desarrollo.</p>
+          </details>
+          <details>
+            <summary>¿Qué necesito para usarlo?</summary>
+            <p>Un navegador con WebGPU y una GPU que admita números de 16 bits (shader-f16): Chrome o Edge recientes en Windows, macOS o ChromeOS, Chrome en Android, o Safari 26. El modelo ligero funciona con gráficas integradas; el máximo necesita una GPU dedicada potente.</p>
+          </details>
+          <details>
+            <summary>¿Cuánto espacio ocupa y cómo lo borro?</summary>
+            <p>Entre 1,1 y unos 8 GB por modelo, en el almacenamiento del navegador. En la app, «Modelos» muestra lo que ocupa cada uno y permite borrarlo. También desaparece al borrar los datos del sitio en tu navegador.</p>
+          </details>
+          <details>
+            <summary>¿Por qué no hay modo sin GPU?</summary>
+            <p>En el procesador estos modelos irían a pocas palabras por segundo, demasiado lento para chatear. Por eso la web exige WebGPU y te explica qué hacer si tu navegador no lo tiene.</p>
+          </details>
+          <details>
+            <summary>¿Es gratis?</summary>
+            <p>Sí. Es un proyecto personal sin ánimo de lucro, sin publicidad ni registro. El coste de cálculo lo pone tu equipo.</p>
+          </details>
+        </div>
+      </section>
+
+      <section class="block cta-final">
+        <div class="wrap">
+          <h2>Pruébalo ahora</h2>
+          <p class="section-lead centered">Elige un modelo, espera a que se descargue y empieza a escribir.</p>
+          <a class="btn primary" href="/app/">Abrir el chat<i data-icon="arrowRight" data-size="16"></i></a>
+        </div>
+      </section>
+    </main>
+    <!--#footer-->
+    <script type="module" src="/src/site/site.ts"></script>
+  </body>
+</html>

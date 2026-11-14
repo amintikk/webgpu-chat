@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Privacy · WebGPU Chat</title>
+    <meta name="description" content="What data WebGPU Chat processes: your conversations never leave the browser, and there are no cookies or analytics." />
+    <link rel="canonical" href="https://llm.aminox.dev/en/privacy/" />
+    <link rel="alternate" hreflang="es" href="https://llm.aminox.dev/privacidad/" />
+    <link rel="alternate" hreflang="en" href="https://llm.aminox.dev/en/privacy/" />
+    <link rel="alternate" hreflang="x-default" href="https://llm.aminox.dev/en/privacy/" />
+    <meta name="color-scheme" content="light dark" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <script src="/theme.js"></script>
+  </head>
+  <body class="site">
+    <!--#header-en-->
+    <main class="doc">
+      <div class="wrap narrow">
+        <h1>Privacy</h1>
+        <p class="updated">Last updated: 14 November 2026</p>
+        <p>Summary: <strong>your conversations never leave your browser.</strong> The model runs on your computer and the history is stored only there. There are no accounts, forms, cookies or analytics. When you download a model, your browser connects to Hugging Face, which receives your IP address.</p>
+        <h2>Data controller</h2>
+        <div class="card">
+          <p><strong>Owner:</strong> Amin Tahtah Toumi</p>
+          <p><strong>Email:</strong> <a href="mailto:amintahtahtoumi@gmail.com">amintahtahtoumi@gmail.com</a></p>
+          <p><strong>Website:</strong> llm.aminox.dev</p>
+        </div>
+        <h2>What never reaches a server</h2>
+        <ul>
+          <li><strong>Your messages and the responses.</strong> They are processed on your GPU and stored only in your browser's storage (IndexedDB). Neither this site, nor Hugging Face, nor anyone else receives them.</li>
+          <li><strong>Your settings</strong> (theme, model, system prompt, temperature…): they are stored in your browser (localStorage).</li>
+          <li><strong>Analytics.</strong> There is no Google Analytics or similar tool. The typeface is served from this same domain.</li>
+        </ul>
+        <p>The website's content security policy (CSP) only allows the page to connect to this domain and to Hugging Face, so it could not send your conversations to another site either.</p>
+        <h2>Data processed and purposes</h2>
+        <div class="table-wrap">
+          <table class="data">
+            <thead><tr><th>Data</th><th>Purpose</th><th>Legal basis</th><th>Retention</th></tr></thead>
+            <tbody>
+              <tr><td>IP address, date, requested page and browser (this website's server logs)</td><td>Serving the website, security and troubleshooting</td><td>Legitimate interest (art. 6.1.f GDPR)</td><td>Up to about 5 weeks; deleted by automatic rotation</td></tr>
+              <tr><td>Email you send us</td><td>Answering your enquiry</td><td>Your consent when you write to us</td><td>As long as needed to handle it</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>No profiles are built, no automated decisions are made about you, and no data is passed to third parties except where legally required.</p>
+        <h2>Model downloads: Hugging Face</h2>
+        <p>The models are not hosted on this site. When you choose one, your browser downloads it directly from <strong>Hugging Face</strong> (huggingface.co and its download servers). Hugging Face receives your <strong>IP address</strong> and the technical details of the request (which files are requested, browser), and processes them as a controller under its <a href="https://huggingface.co/privacy" target="_blank" rel="noopener">privacy policy</a>; it does not act on our behalf. It may process that data outside the European Economic Area. Nothing from your conversations reaches it. Once downloaded, the model stays in your browser and is not requested again.</p>
+        <h2>Service providers</h2>
+        <ul>
+          <li><strong>Oracle Cloud</strong> (server in Madrid, EU): hosts the website files.</li>
+          <li><strong>Cloudflare</strong> (DNS, delivery network and security): the site is served through Cloudflare, which receives your IP address when you visit it. It may process it outside the European Economic Area under the EU-US Data Privacy Framework and standard contractual clauses. It does not receive your conversations or the model downloads, which go straight from your browser to Hugging Face. <a href="https://www.cloudflare.com/privacypolicy/" target="_blank" rel="noopener">Cloudflare privacy policy</a>.</li>
+        </ul>
+        <h2>Cookies and local storage</h2>
+        <p>This site <strong>does not set cookies</strong>. It does store the following in your browser, without sending them to any server:</p>
+        <ul>
+          <li><strong>Conversations</strong> (IndexedDB).</li>
+          <li><strong>Preferences</strong> (localStorage).</li>
+          <li><strong>Downloaded models</strong> (Cache Storage), so that they do not have to be downloaded every time.</li>
+        </ul>
+        <p>This storage is necessary to provide the service you request, so it does not require consent (art. 22.2 LSSI). You can delete conversations and models from the app, or everything at once from your browser settings (site data for llm.aminox.dev).</p>
+        <h2>Your rights</h2>
+        <p>You can request access, rectification, erasure, objection, restriction and portability of your data by writing to the email address above. If you believe your rights have not been respected, you can file a complaint with the <a href="https://www.aepd.es" target="_blank" rel="noopener">Spanish Data Protection Agency (AEPD)</a>. As there are no accounts, we will normally not be able to link an IP address in the logs to a person, and we do not hold your conversations.</p>
+        <h2>Changes</h2>
+        <p>If this policy changes, it will be published here with its new date. If analytics or non-essential cookies were ever added in the future, your consent will be requested beforehand.</p>
+        <p class="note">This is a translation for convenience; the Spanish version prevails.</p>
+      </div>
+    </main>
+    <!--#footer-en-->
+    <script type="module" src="/src/site/site.ts"></script>
+  </body>
+</html>

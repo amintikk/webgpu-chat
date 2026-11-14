@@ -1,0 +1,46 @@
+{
+  "model": "qwen3.5-2b",
+  "repo": "onnx-community/Qwen3.5-2B-ONNX",
+  "revision": "315216e893038beefcc6eba41ac168913dd0d879",
+  "dtype": "q4f16",
+  "device": "cpu (onnxruntime-node)",
+  "decoding": "greedy, reasoning off",
+  "max_new_tokens": 768,
+  "answers": [
+    {
+      "id": "chat-es-1",
+      "answer": "1. **Empieza despacio**: No corras a la velocidad máxima desde el primer día; la constancia es más importante que la velocidad inicial.\n2. **Escucha a tu cuerpo**: Escucha las señales de fatiga y dolor para evitar lesiones y ajustar tu ritmo.\n3. **Hoy es hoy**: No te rindas a la primera semana; la constancia diaria supera a la intensidad esporádica.",
+      "tokens": 90,
+      "ms": 67690,
+      "truncated": false
+    },
+    {
+      "id": "chat-es-2",
+      "answer": "**Asunto:** Urgente: Goteo en el grifo de la cocina\n\nHola [Nombre del casero],\n\nEspero que te encuentres bien.\n\nMe gustaría informarte que he notado que el grifo de la cocina gotea un poco. ¿Podrías revisar si es posible y arreglarlo para que no afecte a la cocina?\n\nQuedo atento a tus comentarios.\n\nSaludos,\n[Tu nombre]",
+      "tokens": 95,
+      "ms": 82657,
+      "truncated": false
+    },
+    {
+      "id": "chat-es-3",
+      "answer": "La fotosíntesis es el proceso mediante el cual las plantas, algas y algunas bacterias convierten la luz solar en energía química, utilizando dióxido de carbono y agua para producir glucosa y oxígeno.\n\nEsta reacción fundamental ocurre principalmente en los cloroplastos, donde los pigmentos capturan la energía lumínica para sintetizar compuestos orgánicos esenciales para la vida.",
+      "tokens": 82,
+      "ms": 161541,
+      "truncated": false
+    },
+    {
+      "id": "chat-es-4",
+      "answer": "La frase corregida es:\n\n«**Haber** si mañana **bamos** al cine y **después** cenamos»\n\n**Cambios realizados:**\n1.  **Haber**: Se añadió la tilde para que sea una palabra completa.\n2.  **bamos**: Se añadió la tilde para que sea un verbo conjugado correctamente.\n3.  **despues**: Se añadió la tilde para que sea una palabra completa.",
+      "tokens": 98,
+      "ms": 134754,
+      "truncated": false
+    },
+    {
+      "id": "chat-es-5",
+      "answer": "The train has been delayed by twenty minutes due to a track fault.",
+      "tokens": 15,
+      "ms": 12166,
+      "truncated": false
+    }
+  ]
+}

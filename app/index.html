@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, interactive-widget=resizes-content" />
+    <title>Chat · WebGPU Chat</title>
+    <meta name="description" content="Chatea con modelos de lenguaje que se ejecutan enteros en tu navegador con WebGPU. Las conversaciones no salen de tu equipo." />
+    <link rel="canonical" href="https://llm.aminox.dev/app/" />
+    <link rel="alternate" hreflang="es" href="https://llm.aminox.dev/app/" />
+    <link rel="alternate" hreflang="en" href="https://llm.aminox.dev/en/app/" />
+    <link rel="alternate" hreflang="x-default" href="https://llm.aminox.dev/en/app/" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#171716" media="(prefers-color-scheme: dark)" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <script src="/theme.js"></script>
+  </head>
+  <body>
+    <div class="shell" id="shell">
+      <aside class="sidebar" id="sidebar" aria-label="Conversaciones">
+        <div class="sb-top">
+          <a class="brand" href="/"><img src="/icon.svg" width="26" height="26" alt="" />WebGPU Chat</a>
+          <button class="icon-btn" id="btn-close-drawer" type="button" aria-label="Cerrar menú"><i data-icon="x" data-size="18"></i></button>
+        </div>
+        <button class="new-chat" id="btn-new" type="button"><i data-icon="plus" data-size="16"></i>Nueva conversación<kbd>Ctrl ⇧ O</kbd></button>
+        <label class="search"><i data-icon="search" data-size="15"></i><input id="search" type="search" placeholder="Buscar conversaciones" aria-label="Buscar conversaciones" /></label>
+        <nav class="conv-list" id="conv-list" role="list" aria-label="Historial"></nav>
+        <div class="sb-bottom">
+          <button class="sb-link" id="btn-models" type="button"><i data-icon="hardDrive" data-size="16"></i>Modelos</button>
+          <a class="lang-switch" href="/en/app/" hreflang="en" lang="en" title="Read in English">EN</a>
+          <button class="icon-btn" id="btn-theme" type="button" aria-label="Cambiar tema"></button>
+        </div>
+      </aside>
+      <div class="scrim" id="scrim"></div>
+      <main class="main">
+        <header class="topbar">
+          <button class="icon-btn" id="btn-menu" type="button" aria-label="Abrir menú"><i data-icon="menu" data-size="20"></i></button>
+          <div class="model-picker" id="model-picker"></div>
+          <div class="top-actions">
+            <button class="icon-btn" id="btn-settings" type="button" aria-label="Ajustes" title="Ajustes" aria-controls="settings" aria-expanded="false"><i data-icon="sliders" data-size="18"></i></button>
+          </div>
+        </header>
+        <section class="thread is-empty" id="thread" aria-live="polite"><div class="thread-inner" id="thread-inner"></div></section>
+        <footer class="composer-wrap">
+          <div class="load-banner" id="load-banner" hidden></div>
+          <form class="composer" id="composer">
+            <textarea id="input" rows="1" aria-label="Mensaje" placeholder="Escribe un mensaje…"></textarea>
+            <div class="composer-bar">
+              <button class="chip" id="btn-reasoning" type="button" aria-pressed="false" title="El modelo piensa antes de responder"><i data-icon="brain" data-size="15"></i>Razonar</button>
+              <span class="ctx-mini" id="ctx-mini"></span>
+              <button class="send" id="btn-send" type="submit" aria-label="Enviar"></button>
+            </div>
+          </form>
+          <p class="disclaimer">Son modelos pequeños que se ejecutan en tu equipo y pueden equivocarse: comprueba lo importante. Tus conversaciones no salen del navegador.</p>
+        </footer>
+      </main>
+      <aside class="settings" id="settings" aria-label="Ajustes">
+        <div class="settings-inner">
+          <div class="settings-head">Ajustes<button class="icon-btn" id="btn-close-settings" type="button" aria-label="Cerrar ajustes"><i data-icon="x" data-size="18"></i></button></div>
+          <div class="settings-body" id="settings-body"></div>
+        </div>
+      </aside>
+    </div>
+    <dialog id="dlg-models" aria-label="Modelos"></dialog>
+    <dialog id="dlg-card" aria-label="Ficha del modelo"></dialog>
+    <dialog id="dlg-confirm"></dialog>
+    <div id="toast" role="status"></div>
+    <script type="module" src="/src/app/main.ts"></script>
+  </body>
+</html>
