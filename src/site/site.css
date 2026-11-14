@@ -822,3 +822,16 @@ table.data tr:last-child td {
     grid-column: 1 / -1;
   }
 }
+
+/* Dark mode: the aurora sits right behind the header, so plain glass glowed too much. A darker tint keeps a
+   hint of colour without the bright band. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .site-top {
+    background: linear-gradient(180deg, rgba(7, 8, 13, 0.8), rgba(7, 8, 13, 0.66));
+    box-shadow: 0 10px 30px -18px rgba(0, 0, 0, 0.6);
+  }
+}
+:root[data-theme='dark'] .site-top {
+  background: linear-gradient(180deg, rgba(7, 8, 13, 0.8), rgba(7, 8, 13, 0.66));
+  box-shadow: 0 10px 30px -18px rgba(0, 0, 0, 0.6);
+}
