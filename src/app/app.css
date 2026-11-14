@@ -2123,3 +2123,22 @@ dialog::backdrop {
 #toast.show {
   transform: translate(-50%, 0);
 }
+
+/* Installed app (and iPhone notch): the page is drawn edge to edge, under the status bar and the gesture
+   bar, so the layout keeps clear of those areas. Zero in a normal browser tab. */
+.shell {
+  box-sizing: border-box;
+  padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
+}
+@media (max-width: 1099px) {
+  .settings {
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+}
+@media (max-width: 899px) {
+  .sidebar {
+    padding-top: calc(12px + env(safe-area-inset-top, 0px));
+    padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+  }
+}
