@@ -1235,8 +1235,10 @@ async function boot() {
   if (DEV_Q4 && gpu.reason === 'no-f16') gpu = { ...gpu, ok: true, f16: true, reason: undefined };
   await refreshCache();
   const rec = recommend(gpu);
+  // ?model=<id> (links from the model pages) picks that model when the device can run it.
+  const asked = modelById(new URLSearchParams(location.search).get('model') ?? '');
   const saved = settings.model && modelById(settings.model);
-  const initial = saved && fit(saved, gpu).ok ? saved.id : rec;
+  const initial = asked && fit(asked, gpu).ok ? asked.id : saved && fit(saved, gpu).ok ? saved.id : rec;
   if (initial) {
     selected = modelById(initial)!;
     settings.model = initial;

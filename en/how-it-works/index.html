@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>How to run an LLM in the browser with WebGPU · WebGPU Chat</title>
+    <meta name="description" content="How a large language model (LLM) runs entirely in the browser: WebGPU, Transformers.js, ONNX Runtime Web, 4-bit quantized models and a cache kept between turns." />
+    <link rel="canonical" href="https://llm.aminox.dev/en/how-it-works/" />
+    <link rel="alternate" hreflang="es" href="https://llm.aminox.dev/como-funciona/" />
+    <link rel="alternate" hreflang="en" href="https://llm.aminox.dev/en/how-it-works/" />
+    <link rel="alternate" hreflang="x-default" href="https://llm.aminox.dev/en/how-it-works/" />
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content="WebGPU Chat" />
+    <meta property="og:title" content="How an AI runs inside your browser" />
+    <meta property="og:description" content="How a large language model (LLM) runs entirely in the browser: WebGPU, Transformers.js, ONNX Runtime Web, 4-bit quantized models and a cache kept between turns." />
+    <meta property="og:url" content="https://llm.aminox.dev/en/how-it-works/" />
+    <meta property="og:image" content="https://llm.aminox.dev/og-en.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:locale:alternate" content="es_ES" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="How an AI runs inside your browser" />
+    <meta name="twitter:description" content="How a large language model (LLM) runs entirely in the browser: WebGPU, Transformers.js, ONNX Runtime Web, 4-bit quantized models and a cache kept between turns." />
+    <meta name="twitter:image" content="https://llm.aminox.dev/og-en.png" />
+    <meta name="color-scheme" content="light dark" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <script src="/theme.js"></script>
+    <script type="application/ld+json">[{"@context":"https://schema.org","@type":"WebPage","name":"How an AI runs inside your browser","description":"How a large language model (LLM) runs entirely in the browser: WebGPU, Transformers.js, ONNX Runtime Web, 4-bit quantized models and a cache kept between turns.","url":"https://llm.aminox.dev/en/how-it-works/","inLanguage":"en","isPartOf":{"@type":"WebSite","name":"WebGPU Chat","url":"https://llm.aminox.dev/en/"},"dateModified":"2026-11-14","author":{"@type":"Person","name":"Amin Tahtah Toumi"}},{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"WebGPU Chat","item":"https://llm.aminox.dev/en/"},{"@type":"ListItem","position":2,"name":"How it works","item":"https://llm.aminox.dev/en/how-it-works/"}]},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Which browsers have WebGPU?","acceptedAnswer":{"@type":"Answer","text":"Chrome and Edge from version 113 on desktop, Chrome 121 or later on Android, and Safari 26 on macOS, iOS and iPadOS."}},{"@type":"Question","name":"Why is there no CPU mode?","acceptedAnswer":{"@type":"Answer","text":"On the processor these models would manage a few words per second, too slow to chat."}},{"@type":"Question","name":"Where is the code?","acceptedAnswer":{"@type":"Answer","text":"On GitHub, under the MIT licence: github.com/amintikk/webgpu-chat."}}]}]</script>
+  </head>
+  <body class="site">
+    <!--#header-en-->
+    <main class="doc article">
+      <div class="wrap narrow">
+        <nav class="crumbs" aria-label="Breadcrumb"><a href="/en/">Home</a><span aria-hidden="true">›</span><span>How it works</span></nav>
+        <h1 data-reveal>How an AI runs inside your browser</h1>
+        <p class="lead" data-reveal>WebGPU Chat has no inference server. The site is a set of static files and your browser does all the work. Here is how it works inside.</p>
+        <section data-reveal>
+          <h2>1. WebGPU: the graphics card from the web</h2>
+          <p>WebGPU is the modern browser API for using the GPU, both for drawing and for computing. A language model is mostly matrix multiplications, exactly what a GPU is good at. Before anything else the app checks that your browser has WebGPU and that the GPU supports 16-bit numbers (shader-f16), and reads the maximum buffer size to block models that will not fit.</p>
+        </section>
+        <section data-reveal>
+          <h2>2. 4-bit quantized models in ONNX format</h2>
+          <p>A 4-billion-parameter model takes 8 GB at 16 bits. Quantized to 4 bits (q4f16) it drops to about 2.8 GB without losing too much quality. The models are stored in ONNX format and downloaded straight from Hugging Face, always at the same pinned version, so what you run is exactly what was tested. The largest model, Gemma 4 12B, we exported ourselves from the official weights and validated against the original in PyTorch.</p>
+        </section>
+        <section data-reveal>
+          <h2>3. Transformers.js and ONNX Runtime Web</h2>
+          <p>Inference runs in a Web Worker, so the page never freezes, with Transformers.js v4 and ONNX Runtime Web in WebGPU mode. Each model uses its official chat template, including the reasoning mode when turned on.</p>
+        </section>
+        <section data-reveal>
+          <h2>4. Key-value cache kept between turns</h2>
+          <p>A language model remembers what it has read in a key-value cache. The app keeps it between messages, so each answer only processes what is new instead of the whole conversation. Each answer’s statistics show how many tokens were reused.</p>
+        </section>
+        <section data-reveal>
+          <h2>5. Everything stays on your device</h2>
+          <p>Conversations are stored in IndexedDB and models in the browser cache. A service worker stores the site too, so everything works <a href="/en/offline-ai-chat/">offline</a> after the first download.</p>
+        </section>
+        <div class="cta-box glass" data-reveal>
+          <a class="btn primary" href="/en/app/">Try it now</a>
+          <p>These are small models and can be wrong. Check what matters.</p>
+        </div>
+        <section class="faq" data-reveal>
+          <h2>Frequently asked questions</h2>
+          <details><summary>Which browsers have WebGPU?</summary><p>Chrome and Edge from version 113 on desktop, Chrome 121 or later on Android, and Safari 26 on macOS, iOS and iPadOS.</p></details>
+          <details><summary>Why is there no CPU mode?</summary><p>On the processor these models would manage a few words per second, too slow to chat.</p></details>
+          <details><summary>Where is the code?</summary><p>On GitHub, under the MIT licence: github.com/amintikk/webgpu-chat.</p></details>
+        </section>
+        <section data-reveal>
+          <h2>Keep reading</h2>
+          <div class="related"><a class="rel glass" data-glow href="/en/offline-ai-chat/"><strong>Offline AI chat, free and in your browser</strong><span>Talk to an AI with no internet connection: download the model once and chat offline in your browser, for free, with nothing to install and your messages never leaving your device..</span></a><a class="rel glass" data-glow href="/en/models/gemma-4-12b/"><strong>Gemma 4 12B in your browser</strong><span>Run Google’s Gemma 4 12B in your browser with WebGPU: our own 4-bit ONNX export validated against the original, no internet after the download (7.5 GB).</span></a><a class="rel glass" data-glow href="/en/private-chatgpt-alternative/"><strong>A private ChatGPT alternative that runs on your device</strong><span>A private, free AI chat with no sign-up: open models run in your browser and your conversations never leave your device.</span></a></div>
+        </section>
+      </div>
+    </main>
+    <!--#footer-en-->
+    <script type="module" src="/src/site/site.ts"></script>
+  </body>
+</html>

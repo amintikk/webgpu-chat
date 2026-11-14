@@ -3,17 +3,24 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>WebGPU Chat · Chat con IA privado que funciona en tu navegador</title>
-    <meta name="description" content="Chatea con modelos de lenguaje abiertos (LFM3, Qwen3.5, Gemma 4) que se ejecutan enteros en tu navegador con WebGPU. Sin cuenta ni servidor: tus conversaciones no salen de tu equipo." />
+    <title>Chat de IA gratis, privado y sin internet en tu navegador · WebGPU Chat</title>
+    <meta name="description" content="Chat de IA gratis y sin registro que funciona en tu navegador, incluso sin internet. Modelos abiertos (Qwen3.5, Gemma 4, LFM3) con WebGPU: tus conversaciones no salen de tu equipo." />
     <link rel="canonical" href="https://llm.aminox.dev/" />
     <link rel="alternate" hreflang="es" href="https://llm.aminox.dev/" />
     <link rel="alternate" hreflang="en" href="https://llm.aminox.dev/en/" />
     <link rel="alternate" hreflang="x-default" href="https://llm.aminox.dev/en/" />
     <meta property="og:type" content="website" />
-    <meta property="og:title" content="WebGPU Chat · Chat con IA privado en tu navegador" />
-    <meta property="og:description" content="Modelos de lenguaje abiertos ejecutándose en tu propio equipo con WebGPU. Tus conversaciones no salen del navegador." />
+    <meta property="og:title" content="Tu IA, dentro de tu navegador" />
+    <meta property="og:description" content="Chat de IA gratis y sin registro que funciona en tu navegador, incluso sin internet. Modelos abiertos (Qwen3.5, Gemma 4, LFM3) con WebGPU: tus conversaciones no salen de tu equipo." />
     <meta property="og:url" content="https://llm.aminox.dev/" />
-    <meta property="og:image" content="https://llm.aminox.dev/shots/app-light.png" />
+    <meta property="og:image" content="https://llm.aminox.dev/og-es.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:site_name" content="WebGPU Chat" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Tu IA, dentro de tu navegador" />
+    <meta name="twitter:description" content="Chat de IA gratis y sin registro que funciona en tu navegador, incluso sin internet. Modelos abiertos (Qwen3.5, Gemma 4, LFM3) con WebGPU: tus conversaciones no salen de tu equipo." />
+    <meta name="twitter:image" content="https://llm.aminox.dev/og-es.png" />
     <meta property="og:locale" content="es_ES" />
     <meta property="og:locale:alternate" content="en_US" />
     <meta name="color-scheme" content="light dark" />
@@ -37,6 +44,7 @@
         "author": { "@type": "Person", "name": "Amin Tahtah Toumi" }
       }
     </script>
+    <script type="application/ld+json" id="ld-extra">[{"@context": "https://schema.org", "@type": "WebSite", "name": "WebGPU Chat", "url": "https://llm.aminox.dev/", "inLanguage": "es"}, {"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "¿Necesito internet?", "acceptedAnswer": {"@type": "Answer", "text": "Solo la primera vez, para abrir la web y descargar el modelo. Después puedes chatear sin conexión: la web y el modelo quedan guardados en tu navegador."}}, {"@type": "Question", "name": "¿De verdad no se envía nada?", "acceptedAnswer": {"@type": "Answer", "text": "Tus mensajes no salen del navegador. Solo se descargan los modelos desde Hugging Face, que, como cualquier servidor, ve tu dirección IP. La web solo puede conectarse a sí misma y a Hugging Face."}}, {"@type": "Question", "name": "¿Qué necesito?", "acceptedAnswer": {"@type": "Answer", "text": "Chrome o Edge recientes (o Safari 26) y una GPU con soporte de números de 16 bits. El modelo ligero va bien con gráficas integradas."}}, {"@type": "Question", "name": "¿Cuánto ocupa y cómo lo borro?", "acceptedAnswer": {"@type": "Answer", "text": "Entre 1,1 y 7,5 GB por modelo. En la app, «Modelos» muestra lo que ocupa cada uno y lo borra."}}, {"@type": "Question", "name": "¿Es gratis?", "acceptedAnswer": {"@type": "Answer", "text": "Sí. Proyecto personal, sin publicidad ni registro, con código abierto."}}]}]</script>
   </head>
   <body class="site">
     <!--#header-->
@@ -99,6 +107,7 @@
               <h3>LFM3 1.7B</h3>
               <p>Rápido y ligero, para el día a día.</p>
               <span class="size">1,1 GB</span>
+              <a class="more" href="/modelos/lfm3-1-7b/">Saber más</a>
               <details>
                 <summary>Ficha</summary>
                 <dl>
@@ -113,6 +122,7 @@
               <h3>Qwen3.5 4B</h3>
               <p>El equilibrio ideal. Razona cuando se lo pides.</p>
               <span class="size">2,8 GB</span>
+              <a class="more" href="/modelos/qwen3-5-4b/">Saber más</a>
               <details>
                 <summary>Ficha</summary>
                 <dl>
@@ -127,6 +137,7 @@
               <h3>Gemma 4 12B</h3>
               <p>El más capaz, para equipos potentes.</p>
               <span class="size">7,5 GB</span>
+              <a class="more" href="/modelos/gemma-4-12b/">Saber más</a>
               <details>
                 <summary>Ficha</summary>
                 <dl>
