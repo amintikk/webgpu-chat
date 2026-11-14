@@ -601,6 +601,9 @@ async function loadModel(id: ModelId) {
     dlog(`ERROR al cargar: ${e instanceof Error ? `${e.name}: ${e.message}\n${e.stack ?? ''}` : msg}`);
     dlog(`memoria en el error · ${memoryText()}`);
     stopMemoryWatch();
+    // A load that failed part-way can keep GPU memory in the worker: start a fresh worker before the next try.
+    engine.restart();
+    dlog('motor reiniciado tras el error');
     loading = null;
     markLoading(null);
     showError(loadErrorText(msg, m));

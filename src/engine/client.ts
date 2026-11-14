@@ -30,15 +30,39 @@ export class Engine {
   busy = false;
 
   constructor() {
-    this.worker = new Worker(new URL('./worker.ts', import.meta.url), { type: 'module' });
-    this.worker.onmessage = (e: MessageEvent<FromWorker>) => this.handle(e.data);
-    this.worker.onerror = (e) => {
+    this.worker = this.spawn();
+  }
+
+  private spawn(): Worker {
+    const w = new Worker(new URL('./worker.ts', import.meta.url), { type: 'module' });
+    w.onmessage = (e: MessageEvent<FromWorker>) => this.handle(e.data);
+    w.onerror = (e) => {
       const err = new Error(e.message || 'Worker error');
       this.loadWaiter?.reject(err);
       this.loadWaiter = null;
       for (const g of this.gens.values()) g.reject(err);
       this.gens.clear();
     };
+    return w;
+  }
+
+  /**
+   * Stops the worker and starts a new one. Ending a worker releases everything it held, including GPU memory
+   * left by a load that failed part-way (the next model would otherwise run out of memory).
+   */
+  restart(): void {
+    this.worker.terminate();
+    this.loaded = null;
+    this.busy = false;
+    const err = new Error('restarted');
+    this.loadWaiter?.reject(err);
+    this.loadWaiter = null;
+    for (const g of this.gens.values()) g.reject(err);
+    this.gens.clear();
+    for (const b of this.benches.values()) b.reject(err);
+    this.benches.clear();
+    this.counts.clear();
+    this.worker = this.spawn();
   }
 
   private send(m: ToWorker) {
