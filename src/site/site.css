@@ -666,6 +666,14 @@ table.data tr:last-child td {
     margin-top: 44px;
     padding: 0 16px;
   }
+  /* On small screens the screenshot is tiny: tight corners so they do not clip its content. */
+  .device {
+    padding: 4px;
+    border-radius: 12px;
+  }
+  .device img {
+    border-radius: 8px;
+  }
   section.block {
     padding: 84px 0;
   }

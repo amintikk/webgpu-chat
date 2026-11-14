@@ -1,16 +1,13 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
   <defs>
-    <linearGradient id="wc-bg" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#1b1e34"/>
-      <stop offset="1" stop-color="#08090f"/>
-    </linearGradient>
-    <linearGradient id="wc-shine" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#fff" stop-opacity=".35"/>
-      <stop offset=".5" stop-color="#fff" stop-opacity="0"/>
-    </linearGradient>
+    <linearGradient id="wc-bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2b3170"/><stop offset="1" stop-color="#0b0d1c"/></linearGradient>
+    <linearGradient id="wc-shine" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".22"/><stop offset=".55" stop-color="#fff" stop-opacity="0"/></linearGradient>
+    <linearGradient id="wc-arc" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#e6ebff"/></linearGradient>
+    <linearGradient id="wc-arc2" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#5b8cff"/><stop offset="1" stop-color="#a678ff"/></linearGradient>
   </defs>
   <rect width="64" height="64" rx="15" fill="url(#wc-bg)"/>
   <rect width="64" height="64" rx="15" fill="url(#wc-shine)"/>
-  <path d="M14 39c6-10 12-14 18-14s12 4 18 14" fill="none" stroke="#fff" stroke-width="4.5" stroke-linecap="round"/>
-  <path d="M20 45c4-5 8-7 12-7s8 2 12 7" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="4.5" stroke-linecap="round"/>
+  <path d="M14 39c6-10 12-14 18-14s12 4 18 14" fill="none" stroke="url(#wc-arc)" stroke-width="4.5" stroke-linecap="round"/>
+  <path d="M20 45c4-5 8-7 12-7s8 2 12 7" fill="none" stroke="url(#wc-arc2)" stroke-width="4.5" stroke-linecap="round"/>
+  <rect x=".5" y=".5" width="63" height="63" rx="14.5" fill="none" stroke="#fff" stroke-opacity=".1"/>
 </svg>
