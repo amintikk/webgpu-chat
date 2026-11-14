@@ -1520,6 +1520,7 @@ async function boot() {
   renderComposerState();
   const crashed = takeCrashedLoad();
   if (crashed) {
+    dlog(`la página se recargó mientras cargaba ${crashed.name}: la carga anterior no terminó`);
     showError(
       t('La última vez la página se cerró mientras cargaba {m}. Lo más probable es que al dispositivo le faltara memoria. Cierra otras pestañas y aplicaciones y vuelve a intentarlo, o elige un modelo más pequeño.', { m: crashed.name }),
     );

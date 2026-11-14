@@ -3,9 +3,52 @@
 // ?debug=1. Nothing is sent anywhere.
 
 const KEY = 'webgpu-chat:debug';
+const LOG_KEY = 'webgpu-chat:debug-log'; // this session's record, saved as it grows (survives a reload)
+const PREV_KEY = 'webgpu-chat:debug-log-prev'; // the record of the session before this one
 const MAX_LINES = 800;
 const lines: string[] = [];
+let previous = '';
 let memTimer = 0;
+let saveTimer = 0;
+
+function readStored(key: string): string {
+  try {
+    return localStorage.getItem(key) ?? '';
+  } catch {
+    return '';
+  }
+}
+
+function writeStored(key: string, value: string) {
+  try {
+    if (value) localStorage.setItem(key, value);
+    else localStorage.removeItem(key);
+  } catch {
+    /* storage full or blocked: the record stays in memory only */
+  }
+}
+
+function save(now = false) {
+  clearTimeout(saveTimer);
+  const write = () => writeStored(LOG_KEY, lines.join('\n'));
+  if (now) write();
+  else saveTimer = window.setTimeout(write, 300);
+}
+
+/** Starts a session: the record of the one before (if it was left behind) is kept for the report. */
+function startSession() {
+  const left = readStored(LOG_KEY);
+  if (left) {
+    previous = left;
+    writeStored(PREV_KEY, left);
+    writeStored(LOG_KEY, '');
+  } else {
+    previous = readStored(PREV_KEY);
+  }
+  lines.length = 0;
+  lines.push(`${new Date().toISOString().slice(11, 23)} — sesión nueva —`);
+  save(true);
+}
 
 export function debugOn(): boolean {
   try {
@@ -25,9 +68,15 @@ export function setDebug(on: boolean): void {
   if (!on) stopMemoryWatch();
 }
 
-/** `?debug=1` in the address turns the mode on for this browser. */
+/** `?debug=1` in the address turns the mode on for this browser. Call once at start-up. */
 export function applyUrlDebug(): void {
   if (new URLSearchParams(location.search).get('debug') === '1') setDebug(true);
+  if (debugOn()) {
+    startSession();
+    // The record is saved when the page goes to the background or is closed, not only on a timer.
+    addEventListener('pagehide', () => save(true));
+    document.addEventListener('visibilitychange', () => document.hidden && save(true));
+  }
 }
 
 /** Adds one line to the record (only while the mode is on). */
@@ -36,6 +85,7 @@ export function dlog(text: string): void {
   const stamp = new Date().toISOString().slice(11, 23);
   lines.push(`${stamp} ${text}`);
   if (lines.length > MAX_LINES) lines.splice(0, lines.length - MAX_LINES);
+  save();
 }
 
 export function debugLines(): string {
@@ -44,6 +94,9 @@ export function debugLines(): string {
 
 export function clearDebug(): void {
   lines.length = 0;
+  previous = '';
+  writeStored(PREV_KEY, '');
+  writeStored(LOG_KEY, '');
 }
 
 /** Heap numbers (Chromium only: performance.memory), as a short text. */
@@ -106,6 +159,11 @@ export async function reportText(extra: string[] = []): Promise<string> {
   }
   out.push(...extra);
   out.push('');
+  if (previous) {
+    out.push('== Sesión anterior (la página se recargó o se cerró; su registro se conserva aquí) ==');
+    out.push(previous);
+    out.push('');
+  }
   out.push('== Registro ==');
   out.push(lines.length ? lines.join('\n') : '(vacío: activa el modo depuración y vuelve a cargar el modelo)');
   return out.join('\n');
