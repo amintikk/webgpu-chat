@@ -14,7 +14,7 @@ export const EN: Record<string, string> = {
   'Se eliminará «{t}» de este navegador. No se puede deshacer.': '“{t}” will be deleted from this browser. This cannot be undone.',
   'Espera a que termine la respuesta o párala.': 'Wait for the response to finish or stop it.',
   '¿En qué te ayudo?': 'How can I help?',
-  'El modelo se ejecuta en tu equipo con WebGPU. Lo que escribas no sale de este navegador.': 'The model runs on your device with WebGPU. What you write does not leave this browser.',
+  'Funciona en tu equipo, sin internet una vez descargado. Lo que escribas no sale de él.': 'It runs on your device, with no internet once downloaded. What you type never leaves it.',
   'Descarga {m} para empezar': 'Download {m} to start',
   '{s} desde Hugging Face, una sola vez. Después funciona sin conexión.': '{s} from Hugging Face, one time only. It then works offline.',
   'Descargar': 'Download',
@@ -192,4 +192,5 @@ export const EN: Record<string, string> = {
   'Empieza a responder en un momento.': 'It starts answering in a moment.',
   'Tarda unos segundos en empezar a responder.': 'It takes a few seconds to start answering.',
   'Tarda bastante en empezar a responder.': 'It takes a while to start answering.',
+  'Sin conexión · la IA sigue funcionando': 'Offline · the AI keeps working',
 };

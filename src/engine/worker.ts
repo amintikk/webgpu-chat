@@ -14,7 +14,7 @@ import {
   Tensor,
   env,
 } from '@huggingface/transformers';
-import { modelById, type ModelInfo } from './models.ts';
+import { MODELS, fileUrl, modelById, type ModelInfo } from './models.ts';
 import type { ChatMessage, FromWorker, GenOptions, ToWorker } from './protocol.ts';
 import { splitReasoning } from './reasoning.ts';
 
@@ -35,6 +35,33 @@ if (onnx?.wasm) {
 }
 
 const CLASSES: Record<string, Any> = { Lfm3ForCausalLM, Qwen3_5ForCausalLM, Gemma4ForCausalLM };
+
+// Transformers.js 4.3 checks that a tokenizer exists by requesting tokenizer_config.json from the `main`
+// branch, ignoring the pinned revision. Requests for `main` of our models go to the pinned revision instead,
+// served from the browser cache when already downloaded, so loading is pinned and works offline.
+const realFetch = globalThis.fetch.bind(globalThis);
+const pinnedFetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+  const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+  const m = /^https:\/\/huggingface\.co\/([^/]+\/[^/]+)\/resolve\/main\/(.+)$/.exec(url);
+  const model = m && MODELS.find((x) => x.repo === m[1] && x.revision);
+  if (m && model) {
+    const pinned = fileUrl(model, m[2]!);
+    try {
+      const hit = 'caches' in globalThis ? await (await caches.open('transformers-cache')).match(pinned) : undefined;
+      if (hit) return hit;
+    } catch {
+      /* cache unavailable: fall through to the network */
+    }
+    return realFetch(pinned, init);
+  }
+  return realFetch(input, init).catch((e) => {
+    console.warn('[worker] request failed:', url, e);
+    throw e;
+  });
+}) as typeof fetch;
+// Transformers.js downloads through env.fetch (captured when it loads), so install it there.
+(env as unknown as { fetch: typeof fetch }).fetch = pinnedFetch;
+globalThis.fetch = pinnedFetch;
 
 const post = (m: FromWorker) => (self as unknown as Worker).postMessage(m);
 

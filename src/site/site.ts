@@ -110,3 +110,8 @@ wireGlow();
 wireReveal();
 // The inline safety net in theme.js shows everything if this script never runs.
 (window as unknown as { siteReady?: boolean }).siteReady = true;
+
+// Offline support (production build only): the service worker keeps the site available with no connection.
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
+}

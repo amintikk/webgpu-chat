@@ -263,7 +263,7 @@ function emptyState(): HTMLElement {
       'p',
       { class: 'empty-sub' },
       icon('lock', 15),
-      h('span', {}, t('El modelo se ejecuta en tu equipo con WebGPU. Lo que escribas no sale de este navegador.')),
+      h('span', {}, t('Funciona en tu equipo, sin internet una vez descargado. Lo que escribas no sale de él.')),
     ),
   );
   if (selected) {
@@ -1176,8 +1176,18 @@ function gpuSummary(): HTMLElement {
 // ---------------------------------------------------------------------------------------------
 // Boot
 
+/** A quiet note when the device is offline: the chat keeps working with a downloaded model. */
+function renderOnline() {
+  const pill = $('offline');
+  pill.hidden = navigator.onLine;
+  pill.replaceChildren(icon('wifiOff', 14), document.createTextNode(t('Sin conexión · la IA sigue funcionando')));
+}
+
 async function boot() {
   mountAurora();
+  renderOnline();
+  addEventListener('online', renderOnline);
+  addEventListener('offline', renderOnline);
   wireGlow();
   applyTheme();
   hydrateIcons();
@@ -1244,3 +1254,8 @@ void boot();
 
 // Expose a tiny hook for the automated benchmark (tools/bench): only reads timings, never data.
 (window as unknown as Record<string, unknown>).__chat = { engine, lang, localPath, setMood };
+
+// Offline support (production build only): the service worker keeps the site available with no connection.
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
+}

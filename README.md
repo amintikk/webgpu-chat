@@ -29,6 +29,7 @@ La selección de modelos, las fichas (qué hacen bien, límites, equipo) y las l
 - Panel de ajustes: prompt de sistema, temperatura, top-p, máximo de tokens, razonamiento sí/no y uso del contexto. Si la conversación no cabe, se omiten los mensajes más antiguos.
 - Descarga con progreso real (bytes) y gestión de modelos guardados (tamaño en caché, borrar, limpiar revisiones antiguas).
 - Tema claro y oscuro, español e inglés, barra lateral como cajón en móvil.
+- Sin conexión: tras la primera visita y la descarga del modelo, la web y el chat funcionan sin internet. Un *service worker* generado en el build (`dist/sw.js`, plugin `offline` de `vite.config.ts`) guarda las páginas, el código y el runtime WebAssembly; los modelos quedan en la caché de Transformers.js. El worker fija también las peticiones de Transformers.js a la rama `main` (comprobación del tokenizador) a la revisión del modelo y las sirve desde la caché.
 
 ## Cómo funciona
 
