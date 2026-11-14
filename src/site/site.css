@@ -25,8 +25,9 @@ body.site > footer {
   z-index: 20;
   background: var(--glass-fill);
   backdrop-filter: var(--blur);
-  border-bottom: 1px solid var(--glass-edge);
-  box-shadow: var(--glass-shine);
+  /* No hairline: the glass fades into the page with a soft shadow. */
+  border-bottom: 0;
+  box-shadow: 0 10px 30px -18px rgba(20, 30, 60, 0.25);
 }
 .site-top-inner {
   display: flex;
