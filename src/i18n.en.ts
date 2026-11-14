@@ -64,6 +64,8 @@ export const EN: Record<string, string> = {
   'No se ha podido cargar {m}: {e}': 'Could not load {m}: {e}',
   'Preparando {m} en la GPU…': 'Preparing {m} on the GPU…',
   'Cargando {m} en la GPU…': 'Loading {m} on the GPU…',
+  'La última vez la página se cerró mientras cargaba {m}. Lo más probable es que al dispositivo le faltara memoria. Cierra otras pestañas y aplicaciones y vuelve a intentarlo, o elige un modelo más pequeño.':
+    'Last time the page closed while loading {m}, most likely because the device ran out of memory. Close other tabs and apps and try again, or choose a smaller model.',
   'Descargando {m} · {a} de {b}': 'Downloading {m} · {a} of {b}',
   'Parar (Esc)': 'Stop (Esc)',
   'Enviar (Intro)': 'Send (Enter)',

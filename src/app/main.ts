@@ -505,6 +505,28 @@ function renderThreadIfEmpty() {
   if (!current || !current.messages.length) renderThread();
 }
 
+// While a model loads, its id is kept in localStorage. If the page opens and finds it, the previous load never
+// finished: almost always the system closed the tab for lack of memory. Then the model is not loaded again on
+// its own (that would close the tab again) and the user is told why.
+const LOADING_KEY = 'webgpu-chat:loading';
+const markLoading = (id: ModelId | null) => {
+  try {
+    if (id) localStorage.setItem(LOADING_KEY, id);
+    else localStorage.removeItem(LOADING_KEY);
+  } catch {
+    /* storage unavailable */
+  }
+};
+function takeCrashedLoad(): ModelInfo | null {
+  try {
+    const id = localStorage.getItem(LOADING_KEY);
+    localStorage.removeItem(LOADING_KEY);
+    return id ? (modelById(id) ?? null) : null;
+  } catch {
+    return null;
+  }
+}
+
 async function loadModel(id: ModelId) {
   const m = modelById(id);
   if (!m || loading?.model === id) return;
@@ -519,6 +541,7 @@ async function loadModel(id: ModelId) {
   renderThreadIfEmpty();
   renderLoad();
   renderComposerState();
+  markLoading(id);
   try {
     const t0 = performance.now();
     await engine.load(id, {
@@ -532,12 +555,14 @@ async function loadModel(id: ModelId) {
       },
     }, DEV_Q4 ? 'q4' : undefined);
     loading = null;
+    markLoading(null);
     cacheInfo.set(id, await cacheStatus(m));
     toast(t('{m} listo en {d}', { m: m.name, d: fmtDuration(performance.now() - t0) }));
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     if (msg === 'superseded') return;
     loading = null;
+    markLoading(null);
     showError(loadErrorText(msg, m));
   }
   restMood();
@@ -1247,7 +1272,12 @@ async function boot() {
   renderSettings();
   renderThread();
   renderComposerState();
-  if (selected) {
+  const crashed = takeCrashedLoad();
+  if (crashed) {
+    showError(
+      t('La última vez la página se cerró mientras cargaba {m}. Lo más probable es que al dispositivo le faltara memoria. Cierra otras pestañas y aplicaciones y vuelve a intentarlo, o elige un modelo más pequeño.', { m: crashed.name }),
+    );
+  } else if (selected) {
     const c = cacheInfo.get(selected.id);
     if (c && isComplete(c) && gpu.ok) void loadModel(selected.id);
   }

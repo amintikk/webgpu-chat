@@ -42,15 +42,24 @@ const CLASSES: Record<string, Any> = { Lfm3ForCausalLM, Qwen3_5ForCausalLM, Gemm
 const realFetch = globalThis.fetch.bind(globalThis);
 const pinnedFetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
   const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
-  const m = /^https:\/\/huggingface\.co\/([^/]+\/[^/]+)\/resolve\/main\/(.+)$/.exec(url);
-  const model = m && MODELS.find((x) => x.repo === m[1] && x.revision);
+  // Our models' files, from `main` or from the pinned revision.
+  const m = /^https:\/\/huggingface\.co\/([^/]+\/[^/]+)\/resolve\/([^/]+)\/(.+)$/.exec(url);
+  const model = m && MODELS.find((x) => x.repo === m[1] && x.revision && (m[2] === 'main' || m[2] === x.revision));
   if (m && model) {
-    const pinned = fileUrl(model, m[2]!);
+    const pinned = fileUrl(model, m[3]!);
+    let cache: Cache | undefined;
     try {
-      const hit = 'caches' in globalThis ? await (await caches.open('transformers-cache')).match(pinned) : undefined;
+      cache = 'caches' in globalThis ? await caches.open('transformers-cache') : undefined;
+      const hit = await cache?.match(pinned);
       if (hit) return hit;
     } catch {
       /* cache unavailable: fall through to the network */
+    }
+    const partial = new Headers(init?.headers ?? (input instanceof Request ? input.headers : undefined)).has('range');
+    const method = (init?.method ?? (input instanceof Request ? input.method : 'GET')).toUpperCase();
+    if (cache && method === 'GET' && !partial && /\.onnx_data(_\d+)?$/.test(m[3]!)) {
+      const stored = await downloadToCache(cache, pinned, m[3]!, init);
+      if (stored) return stored;
     }
     return realFetch(pinned, init);
   }
@@ -59,6 +68,48 @@ const pinnedFetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
     throw e;
   });
 }) as typeof fetch;
+/** Network progress of weight files streamed to the cache (see downloadToCache); set by load(). */
+let onNetProgress: ((file: string, loaded: number, total: number) => void) | null = null;
+
+/**
+ * Weight files (1-2 GB each) are streamed straight to the browser cache and then read back from it.
+ * Left to itself, Transformers.js reads the whole file into memory and then stores a second, in-memory copy
+ * in the cache, which on phones is enough for the system to kill the tab. Returns null on failure (e.g. no
+ * space), and the caller downloads it the usual way.
+ */
+async function downloadToCache(cache: Cache, url: string, file: string, init?: RequestInit): Promise<Response | null> {
+  try {
+    const res = await realFetch(url, init);
+    if (!res.ok) return res;
+    const total = Number(res.headers.get('content-length')) || 0;
+    if (res.status !== 200 || !res.body || !total) {
+      void res.body?.cancel();
+      return null;
+    }
+    let loaded = 0;
+    const counted = res.body.pipeThrough(
+      new TransformStream<Uint8Array, Uint8Array>({
+        transform(chunk, ctl) {
+          loaded += chunk.byteLength;
+          onNetProgress?.(file, loaded, total);
+          ctl.enqueue(chunk);
+        },
+      }),
+    );
+    const headers = new Headers(res.headers);
+    await cache.put(url, new Response(counted, { status: 200, headers }));
+    if (loaded !== total) {
+      // Cut short: never leave a partial file in the cache.
+      await cache.delete(url);
+      return null;
+    }
+    return (await cache.match(url)) ?? null;
+  } catch (e) {
+    console.warn('[worker] streaming to the cache failed, downloading in memory:', file, e);
+    return null;
+  }
+}
+
 // Transformers.js downloads through env.fetch (captured when it loads), so install it there.
 (env as unknown as { fetch: typeof fetch }).fetch = pinnedFetch;
 globalThis.fetch = pinnedFetch;
@@ -139,18 +190,24 @@ async function load(id: string, dtypeOverride?: string, device = 'webgpu') {
   const t0 = performance.now();
   const totals = new Map<string, { loaded: number; total: number }>();
   const expected = new Map(m.files.map((f) => [f.path, f.bytes]));
+  const report = (file: string, loadedNow: number, totalNow: number) => {
+    // The same file may report twice (network, then read back from the cache): keep the furthest point.
+    const prev = totals.get(file);
+    totals.set(file, { loaded: Math.max(prev?.loaded ?? 0, loadedNow), total: totalNow || prev?.total || expected.get(file) || 0 });
+    // Files not started yet still count towards the total, so the bar never jumps backwards.
+    let loaded = 0;
+    let total = 0;
+    for (const f of m.files) {
+      const s = totals.get(f.path);
+      loaded += s?.loaded ?? 0;
+      total += s?.total ?? f.bytes;
+    }
+    post({ type: 'progress', loaded, total, file });
+  };
+  onNetProgress = report;
   const progress = (p: Any) => {
     if (p.status === 'progress' && p.file) {
-      totals.set(p.file, { loaded: p.loaded ?? 0, total: p.total || expected.get(p.file) || 0 });
-      // Files not started yet still count towards the total, so the bar never jumps backwards.
-      let loaded = 0;
-      let total = 0;
-      for (const f of m.files) {
-        const s = totals.get(f.path);
-        loaded += s?.loaded ?? 0;
-        total += s?.total ?? f.bytes;
-      }
-      post({ type: 'progress', loaded, total, file: p.file });
+      report(p.file, p.loaded ?? 0, p.total);
     } else if (p.status === 'done' && p.file) {
       const s = totals.get(p.file);
       if (s) s.loaded = s.total;
