@@ -52,6 +52,10 @@ if (toggle && nav) {
   };
   toggle.addEventListener('click', () => set(!document.body.classList.contains('nav-open')));
   nav.addEventListener('click', (e) => (e.target as HTMLElement).closest('a') && set(false));
+  // Tapping outside the menu (on the dimmed page) closes it.
+  document.addEventListener('click', (e) => {
+    if (document.body.classList.contains('nav-open') && !(e.target as HTMLElement).closest('#site-nav, #nav-toggle')) set(false);
+  });
 }
 
 // Tell the visitor up front whether their browser can run the models.

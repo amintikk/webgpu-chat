@@ -3,7 +3,7 @@ body.site {
   line-height: 1.6;
   overflow-x: hidden;
 }
-body.site > header,
+/* Content sits above the aurora; the sticky header (z-index 20, .site-top) stays above the content. */
 body.site > main,
 body.site > footer {
   position: relative;
@@ -627,17 +627,38 @@ table.data tr:last-child td {
   .site-nav {
     display: none;
     position: absolute;
-    top: 60px;
-    left: 0;
-    right: 0;
+    top: 68px;
+    left: 12px;
+    right: 12px;
     flex-direction: column;
-    padding: 12px 16px;
-    background: var(--glass-strong);
+    gap: 2px;
+    padding: 10px;
+    border-radius: 22px;
+    background: color-mix(in srgb, var(--surface-solid) 94%, transparent);
     backdrop-filter: var(--blur);
-    border-bottom: 1px solid var(--glass-edge);
+    border: 1px solid var(--glass-edge);
+    box-shadow: var(--glass-shine), var(--shadow);
+    transform-origin: top right;
+  }
+  .site-nav a {
+    padding: 13px 14px;
+    border-radius: 14px;
+    font-size: 16px;
+    color: var(--text);
   }
   body.nav-open .site-nav {
     display: flex;
+    animation: nav-in 0.45s var(--spring);
+  }
+  /* The page dims and blurs behind the open menu. */
+  body.nav-open::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: 15;
+    background: rgba(7, 8, 13, 0.22);
+    backdrop-filter: blur(8px);
+    animation: fade-in 0.35s var(--ease);
   }
   .nav-toggle {
     display: inline-flex !important;
@@ -673,5 +694,16 @@ table.data tr:last-child td {
   }
   .ex-nav {
     display: none;
+  }
+}
+
+@keyframes nav-in {
+  from {
+    transform: scale(0.96) translateY(-6px);
+  }
+}
+@keyframes fade-in {
+  from {
+    opacity: 0;
   }
 }
