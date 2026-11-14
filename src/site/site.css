@@ -25,7 +25,6 @@ body.site > footer {
   z-index: 20;
   background: var(--glass-fill);
   backdrop-filter: var(--blur);
-  -webkit-backdrop-filter: var(--blur);
   border-bottom: 1px solid var(--glass-edge);
   box-shadow: var(--glass-shine);
 }
@@ -541,7 +540,6 @@ section.block h2 {
   border-radius: 20px;
   background: var(--glass-fill);
   backdrop-filter: var(--blur);
-  -webkit-backdrop-filter: var(--blur);
   border: 1px solid var(--glass-edge);
   box-shadow: var(--glass-shine);
 }
@@ -636,7 +634,6 @@ table.data tr:last-child td {
     padding: 12px 16px;
     background: var(--glass-strong);
     backdrop-filter: var(--blur);
-    -webkit-backdrop-filter: var(--blur);
     border-bottom: 1px solid var(--glass-edge);
   }
   body.nav-open .site-nav {

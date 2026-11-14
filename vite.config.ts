@@ -32,7 +32,8 @@ const pages = [
 
 export default defineConfig({
   plugins: [partials()],
-  build: { target: 'es2022', chunkSizeWarningLimit: 1200, rollupOptions: { input: pages.map((p) => resolve(__dirname, p)) } },
+  // cssTarget: modern engines, so the minifier keeps the standard backdrop-filter (Chrome ignores the -webkit- one).
+  build: { target: 'es2022', cssTarget: ['chrome120', 'edge120', 'firefox121', 'safari17'], chunkSizeWarningLimit: 1200, rollupOptions: { input: pages.map((p) => resolve(__dirname, p)) } },
   worker: { format: 'es' },
   optimizeDeps: { exclude: ['@huggingface/transformers', 'onnxruntime-web'] },
 });

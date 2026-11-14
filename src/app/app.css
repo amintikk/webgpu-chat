@@ -1402,7 +1402,6 @@ body {
 .settings {
   background: var(--glass-fill);
   backdrop-filter: var(--blur);
-  -webkit-backdrop-filter: var(--blur);
   border-color: var(--glass-edge);
   box-shadow: var(--glass-shine);
 }
@@ -1474,7 +1473,6 @@ body {
 dialog {
   background: var(--glass-strong);
   backdrop-filter: var(--blur);
-  -webkit-backdrop-filter: var(--blur);
   border: 1px solid var(--glass-edge);
   box-shadow: var(--glass-shine), var(--shadow);
 }
@@ -1521,7 +1519,6 @@ dialog {
 .suggestion {
   background: var(--glass-fill);
   backdrop-filter: var(--blur);
-  -webkit-backdrop-filter: var(--blur);
   border: 1px solid var(--glass-edge);
   box-shadow: var(--glass-shine), var(--shadow-sm);
 }
@@ -1565,7 +1562,6 @@ dialog {
   border-radius: 22px 22px 6px 22px;
   background: var(--glass-fill);
   backdrop-filter: var(--blur);
-  -webkit-backdrop-filter: var(--blur);
   border: 1px solid var(--glass-edge);
   box-shadow: var(--glass-shine), var(--shadow-sm);
 }
@@ -1612,7 +1608,6 @@ dialog {
   border-radius: 20px;
   background: var(--glass-fill);
   backdrop-filter: var(--blur);
-  -webkit-backdrop-filter: var(--blur);
   border-color: var(--glass-edge);
   box-shadow: var(--glass-shine);
 }
@@ -1629,7 +1624,6 @@ dialog {
   border: 1px solid var(--glass-edge);
   background: var(--glass-strong);
   backdrop-filter: var(--blur);
-  -webkit-backdrop-filter: var(--blur);
   box-shadow: var(--glass-shine), var(--shadow);
   isolation: isolate;
   transition: box-shadow 0.6s var(--ease);
@@ -1738,4 +1732,31 @@ dialog::backdrop {
 }
 #toast {
   box-shadow: var(--shadow);
+}
+
+/* Drawers on small screens sit over the conversation: near-opaque glass so the menu always reads
+   cleanly, and the page behind is blurred and dimmed. */
+@media (max-width: 1099px) {
+  .settings {
+    background: color-mix(in srgb, var(--surface-solid) 94%, transparent);
+  }
+  .shell.panel-open .scrim {
+    background: rgba(7, 8, 13, 0.28);
+    backdrop-filter: blur(10px);
+  }
+}
+@media (max-width: 899px) {
+  .sidebar {
+    background: color-mix(in srgb, var(--surface-solid) 94%, transparent);
+  }
+  .scrim {
+    background: rgba(7, 8, 13, 0.28);
+    backdrop-filter: blur(10px);
+    animation: scrim-in 0.4s var(--ease);
+  }
+}
+@keyframes scrim-in {
+  from {
+    background: transparent;
+  }
 }

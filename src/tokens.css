@@ -205,7 +205,6 @@ a {
 .glass {
   background: var(--glass-fill);
   backdrop-filter: var(--blur);
-  -webkit-backdrop-filter: var(--blur);
   border: 1px solid var(--glass-edge);
   box-shadow: var(--glass-shine), var(--glass-shadow);
 }
@@ -323,7 +322,6 @@ a {
   border: 1px solid var(--glass-edge);
   background: var(--glass-fill);
   backdrop-filter: var(--blur);
-  -webkit-backdrop-filter: var(--blur);
   box-shadow: var(--glass-shine), var(--shadow-sm);
   font-weight: 560;
   font-size: 14px;
