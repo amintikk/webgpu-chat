@@ -14,10 +14,14 @@ export interface GenOptions {
   repetitionPenalty: number;
   maxTokens: number;
   reasoning: boolean;
+  /** Opt-in, validated against unchunked greedy decoding before first use. */
+  chunkedPrefill?: boolean;
 }
 
 export interface GenStats {
   /** CPU wall times; snapshotMs includes model execution, not exclusive GPU time. */
+  validationMs?: number;
+  chunkedPrefill?: boolean;
   templateMs?: number;
   snapshotMs?: number;
   streamMs?: number;
@@ -34,6 +38,8 @@ export interface GenStats {
 }
 
 export interface BenchResult {
+  comparison?: { greedy: BenchResult; sampling: BenchResult };
+  profiled?: boolean;
   promptTokens: number;
   newTokens: number;
   /** Time to first token for the prompt (prefill), ms. */
@@ -48,7 +54,7 @@ export type ToWorker =
   | { type: 'load'; model: ModelId; lang: 'es' | 'en'; dtype?: string; /** Tests only (Node): 'cpu'. */ device?: string }
   | { type: 'generate'; id: number; messages: ChatMessage[]; options: GenOptions }
   | { type: 'count'; id: number; messages: ChatMessage[]; reasoning: boolean }
-  | { type: 'bench'; id: number }
+  | { type: 'bench'; id: number; compare?: boolean; profile?: boolean }
   | { type: 'stop' }
   | { type: 'reset' }
   | { type: 'unload' };

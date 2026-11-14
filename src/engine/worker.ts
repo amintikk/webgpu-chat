@@ -16,6 +16,7 @@ import {
 } from '@huggingface/transformers';
 import { MODELS, fileUrl, modelById, type ModelInfo } from './models.ts';
 import type { ChatMessage, FromWorker, GenOptions, ToWorker } from './protocol.ts';
+import { GpuProfile } from './profiling.ts';
 import { splitReasoning } from './reasoning.ts';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -196,6 +197,7 @@ async function load(id: string, dtypeOverride?: string, device = 'webgpu') {
     return;
   }
   await unload();
+  chunkValidated = null;
   const t0 = performance.now();
   const totals = new Map<string, { loaded: number; total: number }>();
   const expected = new Map(m.files.map((f) => [f.path, f.bytes]));
@@ -290,7 +292,23 @@ function template(messages: ChatMessage[], generationPrompt: boolean, reasoning:
   return list;
 }
 
-async function prefill(state: CacheState | null, ids: number[]): Promise<CacheState> {
+async function prefill(state: CacheState | null, ids: number[], chunkSize = 0): Promise<CacheState> {
+  if (chunkSize && ids.length - (state?.tokens.length ?? 0) > chunkSize) {
+    let next = state;
+    try {
+      while ((next?.tokens.length ?? 0) < ids.length) {
+        if (stopper.interrupted) throw new Error('Prefill interrupted');
+        const end = Math.min(ids.length, (next?.tokens.length ?? 0) + chunkSize);
+        const previous = next;
+        next = await prefill(previous, ids.slice(0, end));
+        if (previous && previous !== state) await disposeState(previous, next);
+      }
+      return next!;
+    } catch (e) {
+      if (next && next !== state) await disposeState(next, state);
+      throw e;
+    }
+  }
   // Run the model over `ids` (continuing `state` if given) and return the cache that covers them.
   const input_ids = new Tensor('int64', BigInt64Array.from(ids.map(BigInt)), [1, ids.length]);
   const pkv = state ? copyCache(state.cache) : undefined;
@@ -329,8 +347,12 @@ class DeltaStreamer extends BaseStreamer {
 async function generate(id: number, messages: ChatMessage[], o: GenOptions) {
   if (!model || !info) throw new Error('No model loaded');
   const m = info;
-  stopper.reset();
   const start = performance.now();
+  stopper.reset();
+  if (o.chunkedPrefill && chunkValidated === null) await validateChunkedPrefill();
+  const validationMs = performance.now() - start;
+  if (stopper.interrupted) throw new Error('Prefill interrupted');
+  const templateStart = performance.now();
   const full = template(messages, true, o.reasoning);
   const hist = template(messages, false, o.reasoning);
   const boundary = isPrefix(hist, full) && hist.length < full.length ? hist.length : 0;
@@ -341,14 +363,14 @@ async function generate(id: number, messages: ChatMessage[], o: GenOptions) {
   let base: CacheState | null = candidates[0] ?? null;
   const t0 = performance.now();
   const cached = base?.tokens.length ?? 0;
-  const templateMs = t0 - start;
+  const templateMs = t0 - templateStart;
   const snapshotStart = performance.now();
 
   // Snapshot at the end of the history (before the generation prompt), reused by the next turn
   // even though chat templates rewrite earlier answers (e.g. dropping their reasoning).
   let newSnap: CacheState | null = null;
   if (boundary > cached) {
-    newSnap = await prefill(base, full.slice(0, boundary));
+    newSnap = await prefill(base, full.slice(0, boundary), o.chunkedPrefill && chunkValidated ? 128 : 0);
     base = newSnap;
   } else if (base === snap && snap) {
     newSnap = snap;
@@ -442,7 +464,8 @@ async function generate(id: number, messages: ChatMessage[], o: GenOptions) {
     content: r.content,
     reasoning: r.reasoning,
     stats: {
-      templateMs, snapshotMs, streamMs, streamUpdates,
+      templateMs, snapshotMs, streamMs, streamUpdates, validationMs,
+      chunkedPrefill: Boolean(o.chunkedPrefill && chunkValidated),
       totalMs: end - start,
       promptTokens: full.length,
       cachedTokens: cached,
@@ -455,40 +478,85 @@ async function generate(id: number, messages: ChatMessage[], o: GenOptions) {
   });
 }
 
-/** Fixed benchmark: same prompt, greedy decoding, exactly 128 new tokens; the second of two runs is reported. */
-async function bench(id: number) {
+/** Test equivalence in this model/device session before allowing experimental chunked prefill. */
+async function validateChunkedPrefill() {
+  await resetCaches();
+  const ids = template([{ role: 'user', content: 'Read this text and summarize it briefly: ' + 'The river crosses a village with gardens and a stone bridge. '.repeat(8) }], true, false);
+  let state: CacheState | null = null;
+  const run = async (chunked: boolean) => {
+    if (chunked) state = await prefill(null, ids.slice(0, -1), 32);
+    const out = await model.generate({
+      input_ids: new Tensor('int64', BigInt64Array.from(ids.map(BigInt)), [1, ids.length]),
+      attention_mask: new Tensor('int64', new BigInt64Array(ids.length).fill(1n), [1, ids.length]),
+      ...(state ? { past_key_values: copyCache(state.cache) } : {}),
+      max_new_tokens: 8, min_new_tokens: 8, do_sample: false, stopping_criteria: [stopper], return_dict_in_generate: true,
+    });
+    const tokens = Array.from(out.sequences.data as ArrayLike<bigint>, String).slice(ids.length);
+    await disposeState(state, { cache: out.past_key_values, tokens: [] });
+    state = null;
+    await disposeState({ cache: out.past_key_values, tokens: [] });
+    return tokens;
+  };
+  try {
+    const baseline = await run(false);
+    const chunked = await run(true);
+    chunkValidated = baseline.length === 8 && JSON.stringify(baseline) === JSON.stringify(chunked);
+    dbg(`prefill por bloques: prueba local de equivalencia ${chunkValidated ? 'superada; bloques de 128 habilitados bajo petición' : 'fallida; se conserva prefill completo'}. Prueba corta, no garantiza equivalencia universal.`);
+  } catch (e) {
+    chunkValidated = false;
+    dbg(`prefill por bloques no disponible: ${errText(e)}`);
+  } finally { await disposeState(state); }
+}
+
+/** Two warmed runs per mode; comparison is end-to-end, not an isolated sampler microbenchmark. */
+async function bench(id: number, compare = false, profile = false) {
   if (!model) throw new Error('No model loaded');
   await resetCaches();
+  stopper.reset();
   const ids = template([{ role: 'user', content: 'Write a detailed paragraph about the history of the Internet.' }], true, false);
-  let result: Any = null;
-  for (let run = 0; run < 2; run++) {
-    const input_ids = new Tensor('int64', BigInt64Array.from(ids.map(BigInt)), [1, ids.length]);
-    let first = 0;
-    const streamer = new DeltaStreamer(() => {
-      if (!first) first = performance.now();
-    });
-    const t0 = performance.now();
-    const out = await model.generate({
-      input_ids,
-      attention_mask: new Tensor('int64', new BigInt64Array(ids.length).fill(1n), [1, ids.length]),
-      max_new_tokens: 128,
-      min_new_tokens: 128,
-      do_sample: false,
-      streamer,
-      return_dict_in_generate: true,
-    });
-    const end = performance.now();
-    await disposeState({ cache: out.past_key_values, tokens: [] });
-    const n = Number(out.sequences.dims.at(-1)) - ids.length;
-    const prefillMs = (first || end) - t0;
-    const decodeMs = end - (first || end);
-    result = { promptTokens: ids.length, newTokens: n, prefillMs, decodeMs, tokensPerSecond: ((n - 1) * 1000) / decodeMs, prefillTokensPerSecond: (ids.length * 1000) / prefillMs, runs: run + 1 };
+  const aggregate = new GpuProfile();
+  const previousProfile = onnx.webgpu?.profiling;
+  if (profile && onnx.webgpu) onnx.webgpu.profiling = { mode: 'default', ondata: (d: Any) => aggregate.add(d) };
+  const results: Any[] = [];
+  try {
+    for (const sampling of compare ? [false, true] : [false]) {
+      let result: Any;
+      for (let run = 0; run < 2; run++) {
+        let first = 0;
+        const streamer = new DeltaStreamer(() => { if (!first) first = performance.now(); });
+        const t0 = performance.now();
+        const out = await model.generate({
+          input_ids: new Tensor('int64', BigInt64Array.from(ids.map(BigInt)), [1, ids.length]),
+          attention_mask: new Tensor('int64', new BigInt64Array(ids.length).fill(1n), [1, ids.length]),
+          max_new_tokens: 128, min_new_tokens: 128,
+          do_sample: sampling, temperature: 0.7, top_p: 0.9, top_k: 40, repetition_penalty: 1,
+          streamer, stopping_criteria: [stopper], return_dict_in_generate: true,
+        });
+        const end = performance.now();
+        await disposeState({ cache: out.past_key_values, tokens: [] });
+        if (stopper.interrupted) throw new Error('Benchmark interrupted');
+        const n = Number(out.sequences.dims.at(-1)) - ids.length;
+        const prefillMs = (first || end) - t0;
+        const decodeMs = end - (first || end);
+        result = { promptTokens: ids.length, newTokens: n, prefillMs, decodeMs, tokensPerSecond: decodeMs > 0 ? ((n - 1) * 1000) / decodeMs : 0, prefillTokensPerSecond: prefillMs > 0 ? ids.length * 1000 / prefillMs : 0, runs: run + 1 };
+      }
+      results.push(result);
+    }
+    const result = { ...results[0], profiled: profile, ...(compare ? { comparison: { greedy: results[0], sampling: results[1] } } : {}) };
+    dbg(`benchmark: ${JSON.stringify(result)}; mismo prompt y longitud; sampling temperature=0.7 top_p=0.9 top_k=40 repetition_penalty=1; el muestreo cambia la secuencia; no mide utilización del hardware`);
+    if (profile) {
+      // ORT delivers timestamp readbacks asynchronously; report the samples received so far.
+      dbg(`perfil GPU (muestras recibidas, puede ser parcial; incluye calentamiento; instrumentación altera tiempos): ${JSON.stringify(aggregate.summary())}`);
+      if (!aggregate.summary().samples) dbg('Sin muestras GPU: timestamp-query puede no estar disponible o la lectura seguir pendiente. No significa coste cero.');
+    }
+    post({ type: 'bench', id, result });
+  } finally {
+    if (profile && onnx.webgpu) onnx.webgpu.profiling = previousProfile ?? { mode: 'off' };
   }
-  dbg(`benchmark sintético (segunda ejecución, sin muestreo ni streaming de texto): ${JSON.stringify(result)}`);
-  post({ type: 'bench', id, result });
 }
 
 let specialCache: string[] | null = null;
+let chunkValidated: boolean | null = null;
 function specials(): string[] {
   if (!specialCache) {
     // Removed from the text the user sees, after the reasoning markers have been used to split it.
@@ -513,7 +581,7 @@ self.onmessage = (e: MessageEvent<ToWorker>) => {
       } else if (msg.type === 'generate') {
         await generate(msg.id, msg.messages, msg.options);
       } else if (msg.type === 'bench') {
-        await bench(msg.id);
+        await bench(msg.id, msg.compare, msg.profile);
       } else if (msg.type === 'count') {
         // Some templates (Qwen) refuse a conversation without a user message, e.g. an empty chat with a system
         // prompt: count it as if an empty user message were there, which is what the answer will add anyway.

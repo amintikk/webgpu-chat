@@ -227,7 +227,7 @@ function newConversation() {
 }
 
 function openConversation(id: string) {
-  if (generating) {
+  if (generating || engine.busy) {
     toast(t('Espera a que termine la respuesta o párala.'));
     return;
   }
@@ -510,7 +510,7 @@ document.addEventListener('click', (e) => {
 async function selectModel(id: ModelId, userChoice: boolean) {
   const m = modelById(id);
   if (!m) return;
-  if (generating) {
+  if (generating || engine.busy) {
     toast(t('Espera a que termine la respuesta o párala.'));
     return;
   }
@@ -681,8 +681,9 @@ function autosize() {
 }
 
 function renderComposerState() {
+  document.querySelectorAll<HTMLButtonElement>('button[data-engine-test]').forEach((b) => { b.disabled = !engine.loaded || engine.busy; });
   renderLoad();
-  const ready = !!selected && engine.loaded === selected.id && !loading;
+  const ready = !!selected && engine.loaded === selected.id && !loading && !engine.busy;
   el.send.replaceChildren(icon(generating ? 'stop' : 'arrowUp', 18));
   el.send.title = generating ? t('Parar (Esc)') : t('Enviar (Intro)');
   el.send.setAttribute('aria-label', el.send.title);
@@ -785,7 +786,7 @@ function renderAttachments() {
 async function send() {
   const text = el.input.value.trim();
   const files = readyFiles();
-  if ((!text && !files.length) || pending.some((p) => !p.file) || generating || !selected || engine.loaded !== selected.id) return;
+  if ((!text && !files.length) || pending.some((p) => !p.file) || generating || engine.busy || !selected || engine.loaded !== selected.id) return;
   const msg: StoredMessage = files.length ? { role: 'user', content: text, files } : { role: 'user', content: text };
   if (files.length) {
     // The new message alone (with its files) must leave room for the answer.
@@ -1107,9 +1108,33 @@ function debugBlock(): HTMLElement {
     }
     view.hidden = !sw.checked;
   });
+  const chunks = h('input', { type: 'checkbox' }) as HTMLInputElement;
+  try { chunks.checked = localStorage.getItem('webgpu-chat:chunked-prefill') === '1'; } catch { /* unavailable storage */ }
+  chunks.addEventListener('change', () => {
+    try { localStorage.setItem('webgpu-chat:chunked-prefill', chunks.checked ? '1' : '0'); } catch { chunks.checked = false; }
+  });
+  const compare = async (profile: boolean) => {
+    if (!engine.loaded || generating || engine.busy) return;
+    comparison.disabled = profiled.disabled = true;
+    try {
+      dlog(profile ? 'Iniciando comparación con perfil GPU; los tiempos tendrán sobrecoste.' : 'Iniciando comparación sin perfil GPU.');
+      const pendingBench = engine.bench(true, profile);
+      renderComposerState();
+      await pendingBench;
+      await showDebugReport();
+    } catch (e) { toast(String(e)); }
+    finally { comparison.disabled = profiled.disabled = false; renderComposerState(); }
+  };
+  const comparison = h('button', { type: 'button', class: 'btn small', 'data-engine-test': '', onclick: () => void compare(false) }, t('Comparar muestreo')) as HTMLButtonElement;
+  const profiled = h('button', { type: 'button', class: 'btn small', 'data-engine-test': '', onclick: () => void compare(true) }, t('Perfilar GPU')) as HTMLButtonElement;
+  comparison.disabled = profiled.disabled = !engine.loaded || engine.busy;
   const view = h(
     'div',
     { class: 'debug-tools', hidden: !sw.checked },
+    h('label', { class: 'check' }, chunks, h('span', {}, t('Contexto por bloques (experimental; valida equivalencia al primer uso)'))),
+    comparison, profiled,
+    h('button', { type: 'button', class: 'btn small ghost', onclick: () => engine.stop() }, t('Parar prueba')),
+    h('p', { class: 'hint' }, t('Carga un modelo primero. Cada comparación genera cuatro respuestas de prueba. El perfil GPU añade sobrecoste; consulta el informe.')),
     h('button', { type: 'button', class: 'btn small', onclick: () => void showDebugReport() }, icon('code', 15), t('Ver informe')),
     h('button', { type: 'button', class: 'btn small ghost', onclick: () => void copyDebugReport() }, icon('copy', 15), t('Copiar informe')),
     h('button', { type: 'button', class: 'btn small ghost', onclick: () => (clearDebug(), toast(t('Registro borrado.'))) }, t('Borrar registro')),
@@ -1373,7 +1398,9 @@ function benchBox(m: ModelInfo): HTMLElement {
     verdict.textContent = t('Midiendo… el modelo escribe un texto de prueba dos veces.');
     details.replaceChildren();
     try {
-      const r = await engine.bench();
+      const pendingBench = engine.bench();
+      renderComposerState();
+      const r = await pendingBench;
       const sc = score(r.tokensPerSecond);
       const lv = level(r.tokensPerSecond);
       const wt = wait(r.prefillMs);
@@ -1426,6 +1453,7 @@ function benchBox(m: ModelInfo): HTMLElement {
       verdict.replaceChildren(h('span', { class: 'opt-warn' }, e instanceof Error ? e.message : String(e)));
     }
     btn.disabled = false;
+    renderComposerState();
     engine.reset();
   });
   return h(

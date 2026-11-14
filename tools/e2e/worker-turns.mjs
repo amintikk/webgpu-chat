@@ -10,6 +10,7 @@ const pending = new Map();
 let waiter = null;
 globalThis.self = globalThis;
 globalThis.postMessage = (m) => {
+  if (m.type === 'log') { console.log(m.text); return; }
   if (m.type === 'delta' || m.type === 'progress' || m.type === 'status') return;
   if (m.type === 'error') console.log('ERROR', m.stage, m.message);
   const r = waiter;
@@ -20,10 +21,16 @@ await import('../../src/engine/worker.ts');
 env.useBrowserCache = false; // the worker enables Cache Storage, which Node lacks
 env.useFSCache = true;
 const send = (data) => new Promise((resolve) => ((waiter = resolve), globalThis.onmessage({ data })));
-const opts = { temperature: 0, topP: 1, topK: 1, repetitionPenalty: 1, maxTokens: 24, reasoning: false };
+const opts = { chunkedPrefill: process.argv.includes('--chunk-smoke'), temperature: 0, topP: 1, topK: 1, repetitionPenalty: 1, maxTokens: 24, reasoning: false };
 
 const t0 = Date.now();
 console.log('load', (await send({ type: 'load', model, lang: 'es', dtype, device: 'cpu' })).type, `${Date.now() - t0} ms`);
+if (process.argv.includes('--bench-smoke')) {
+  const result = await send({ type: 'bench', id: 1, compare: true });
+  const valid = result.type === 'bench' && result.result.comparison?.greedy.newTokens === 128 && result.result.comparison?.sampling.newTokens === 128;
+  console.log('benchmark comparison', valid ? 'PASS' : 'FAIL');
+  process.exit(valid ? 0 : 1);
+}
 const chat = [{ role: 'user', content: 'Hola, ¿cómo te llamas? Responde en una frase.' }];
 let ok = true;
 async function turn(label, messages, o = opts) {
@@ -37,10 +44,17 @@ async function turn(label, messages, o = opts) {
     ok = false;
     console.log(label, 'LEAKED SPECIAL TOKEN', JSON.stringify(r.content));
   }
-  console.log(label, `prompt=${r.stats.promptTokens} cached=${r.stats.cachedTokens} new=${r.stats.newTokens}`, JSON.stringify(r.content.slice(0, 70)));
+  console.log(label, `prompt=${r.stats.promptTokens} cached=${r.stats.cachedTokens} new=${r.stats.newTokens} chunked=${r.stats.chunkedPrefill ?? 'n/a'}`, JSON.stringify(r.content.slice(0, 70)));
   return r;
 }
 let r = await turn('turn 1', chat);
+if (process.argv.includes('--chunk-smoke')) {
+  const longChat = [{ role: 'user', content: 'Resume en español: ' + 'The river crosses a village with gardens and a stone bridge. '.repeat(20) }];
+  const a = await turn('chunked long prompt', longChat, { ...opts, maxTokens: 8 });
+  longChat.push({ role: 'assistant', content: a?.content ?? '' }, { role: 'user', content: '¿Qué cruza el río?' });
+  await turn('chunked follow-up', longChat, { ...opts, maxTokens: 8 });
+  process.exit(ok ? 0 : 1);
+}
 chat.push({ role: 'assistant', content: r?.content ?? '' }, { role: 'user', content: '¿Y cuánto es 2 + 2?' });
 r = await turn('turn 2', chat);
 r = await turn('regenerate', chat);

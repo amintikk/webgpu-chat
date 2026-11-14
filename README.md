@@ -58,6 +58,36 @@ del hardware: usa la segunda ejecución de 128 tokens sin muestreo ni streaming 
 las líneas `CHAT` del informe, incluidos segundos turnos con caché. Hace falta un perfil del cliente
 para atribuir un cuello de botella a CPU, GPU o transferencias; estas métricas no lo certifican.
 
+### Pruebas avanzadas (Ajustes → Modo depuración)
+
+- **Comparar muestreo**: mismo prompt y 128 tokens por respuesta, dos ejecuciones por modo;
+  se informa la segunda. Compara voraz con temperatura 0,7, top-p 0,9 y top-k 40.
+  Las secuencias pueden diferir: es una comparación de generación completa, no una medida aislada
+  del coste del sampler. Se vacía la caché conversacional antes de empezar.
+- **Perfilar GPU**: ejecuta esa comparación con `onnx.webgpu.profiling.ondata`. Agrupa tiempos
+  de kernels y conserva los 12 grupos más costosos, sin tensores ni texto. Incluye calentamiento.
+  El registro puede ser parcial porque los timestamps llegan asíncronamente. Sin muestras no
+  significa coste cero: la función puede no estar disponible. La instrumentación altera el rendimiento;
+  compara velocidades con el perfil apagado. La suma de kernels no es utilización GPU ni VRAM.
+- **Contexto por bloques**: experimental, desactivado por defecto. Antes del primer uso por modelo
+  cargado compara ocho tokens voraces con y sin bloques en un prompt fijo. Si difieren o falla,
+  mantiene el camino normal. Si pasa, prepara las instantáneas de contexto en bloques de 128 tokens,
+  conservando los estados recurrentes y liberando los intermedios. Esta prueba corta no demuestra
+  paridad universal ni ahorro de memoria en todo hardware. El informe indica si se aplicó y el tiempo
+  de validación; `totalMs` incluye ese tiempo, `prefillMs` no. Desmarca para volver al camino normal.
+- **Parar prueba** cancela la generación en curso; puede esperar a que termine la operación actual.
+
+Estas funciones mantienen Transformers.js/ONNX y las exportaciones fijadas. No implementan el sampler
+GPU de MLC, no cambian el motor ni activan captura de grafos con formas dinámicas. Las ideas de
+[WebLLM](https://github.com/mlc-ai/web-llm/blob/main/src/llm_chat.ts) se aplican aquí como pruebas
+comparables y prefill experimental; el [perfil de ONNX](https://onnxruntime.ai/docs/tutorials/web/performance-diagnosis.html)
+permite investigar el grafo antes de sustituir operaciones.
+
+Prueba de integración CPU con pesos reales ya cacheados:
+`node tools/e2e/worker-turns.mjs lfm3-1.7b q4f16 --chunk-smoke`
+(y `qwen3.5-4b`). Comprueba validación local, prompt largo y continuación. Las cifras CPU no
+representan el rendimiento WebGPU del cliente.
+
 ## Gemma 4 12B: exportación propia
 
 No había un ONNX fiable de `google/gemma-4-12B-it`, así que `tools/gemma4/export.py` construye el grafo

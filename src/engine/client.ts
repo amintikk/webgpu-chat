@@ -42,6 +42,10 @@ export class Engine {
       this.loadWaiter = null;
       for (const g of this.gens.values()) g.reject(err);
       this.gens.clear();
+      for (const b of this.benches.values()) b.reject(err);
+      this.benches.clear();
+      this.busy = false;
+      this.loaded = null;
     };
     return w;
   }
@@ -93,6 +97,7 @@ export class Engine {
         break;
       }
       case 'bench':
+        this.busy = false;
         this.benches.get(m.id)?.resolve(m.result);
         this.benches.delete(m.id);
         break;
@@ -107,6 +112,7 @@ export class Engine {
           this.loadWaiter?.reject(err);
           this.loadWaiter = null;
         } else if (m.id !== undefined && this.benches.has(m.id)) {
+          this.busy = false;
           this.benches.get(m.id)!.reject(err);
           this.benches.delete(m.id);
         } else if (m.id !== undefined) {
@@ -134,11 +140,14 @@ export class Engine {
   }
 
   generate(messages: ChatMessage[], options: GenOptions, ev: GenEvents): Promise<GenResult> {
+    if (this.busy) return Promise.reject(new Error('Engine busy'));
     const id = ++this.seq;
+    let chunkedPrefill = false;
+    try { chunkedPrefill = localStorage.getItem('webgpu-chat:chunked-prefill') === '1'; } catch { /* unavailable storage */ }
     this.busy = true;
     return new Promise((resolve, reject) => {
       this.gens.set(id, { resolve, reject, ev });
-      this.send({ type: 'generate', id, messages, options });
+      this.send({ type: 'generate', id, messages, options: { ...options, chunkedPrefill } });
     });
   }
 
@@ -150,11 +159,13 @@ export class Engine {
     });
   }
 
-  bench(): Promise<BenchResult> {
+  bench(compare = false, profile = false): Promise<BenchResult> {
+    if (this.busy) return Promise.reject(new Error('Engine busy'));
+    this.busy = true;
     const id = ++this.seq;
     return new Promise((resolve, reject) => {
       this.benches.set(id, { resolve, reject });
-      this.send({ type: 'bench', id });
+      this.send({ type: 'bench', id, compare, profile });
     });
   }
 

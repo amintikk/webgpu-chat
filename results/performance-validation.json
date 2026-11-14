@@ -1,0 +1,51 @@
+{
+  "date": "2026-11-14",
+  "backend": "CPU (Node); not WebGPU performance measurements",
+  "tests": {
+    "unit": {
+      "passed": 12
+    },
+    "typescript_build": "passed",
+    "browser_ui": [
+      "Spanish controls and persistence",
+      "English mobile width 390; no horizontal overflow"
+    ],
+    "lfm3-1.7b": {
+      "dtype": "q4f16",
+      "chunk_equivalence_8_tokens": "passed",
+      "long_prompt_tokens": 257,
+      "followup_cached_tokens": 264,
+      "chunked_prefill_applied": true,
+      "benchmark_comparison": {
+        "status": "passed",
+        "runs_per_mode": 2,
+        "tokens_per_run": 128,
+        "profiled": false,
+        "greedy": {
+          "prefillMs": 1119.002735,
+          "decodeMs": 27090.591905,
+          "tokensPerSecond": 4.687974350850567
+        },
+        "sampling": {
+          "prefillMs": 756.372565,
+          "decodeMs": 20782.738103,
+          "tokensPerSecond": 6.110840610634818
+        },
+        "note": "CPU smoke test, single comparison; different generated sequences and runtime noise. Not evidence of faster sampling or client GPU performance."
+      }
+    },
+    "qwen3.5-4b": {
+      "dtype": "q4f16",
+      "chunk_equivalence_8_tokens": "different token sequence; optimization rejected",
+      "long_prompt_tokens": 256,
+      "followup_cached_tokens": 249,
+      "fallback_conversation": "passed"
+    }
+  },
+  "not_verified": [
+    "GPU timestamp callback on real hardware",
+    "WebGPU speed or memory improvement",
+    "Gemma chunk equivalence",
+    "GPU-based sampling implementation (Transformers.js sampler retained)"
+  ]
+}
