@@ -19,3 +19,7 @@ test('reasoning opened by the model (Gemma 4)', () => {
   assert.deepEqual(splitReasoning('<|channel>thought\nA ver', gemma, true), { reasoning: 'A ver', content: '', thinking: true });
   assert.deepEqual(splitReasoning('<|channel>thought\nA ver<channel|>Sí.<turn|>', gemma, true, ['<turn|>']), { reasoning: 'A ver', content: 'Sí.', thinking: false });
 });
+
+test('a stray closing tag with reasoning off splits off the first copy', () => {
+  assert.deepEqual(splitReasoning('Respuesta.</think>Respuesta.', qwen, false), { reasoning: 'Respuesta.', content: 'Respuesta.', thinking: false });
+});

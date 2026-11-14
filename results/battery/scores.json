@@ -2,28 +2,28 @@
   "table": {
     "lfm3-1.7b": {
       "cats": {
-        "chat": "4/5",
+        "chat": "8/10",
         "code": "7/10",
-        "reason": "4/10"
+        "reason": "7/10"
       },
-      "total": "15/25",
-      "pending": 5,
-      "tps": 2.567945755563532,
-      "answers": 24
+      "total": "22/30",
+      "pending": 0,
+      "tps": 2.7189368809825796,
+      "answers": 30
     }
   },
   "detail": [
     {
       "model": "lfm3-1.7b",
       "id": "chat-es-1",
-      "score": null,
-      "how": "manual (pending)"
+      "score": 0.5,
+      "how": "manual"
     },
     {
       "model": "lfm3-1.7b",
       "id": "chat-es-2",
-      "score": null,
-      "how": "manual (pending)"
+      "score": 1,
+      "how": "manual"
     },
     {
       "model": "lfm3-1.7b",
@@ -49,20 +49,20 @@
     {
       "model": "lfm3-1.7b",
       "id": "chat-en-1",
-      "score": null,
-      "how": "manual (pending)"
+      "score": 1,
+      "how": "manual"
     },
     {
       "model": "lfm3-1.7b",
       "id": "chat-en-2",
-      "score": null,
-      "how": "manual (pending)"
+      "score": 1,
+      "how": "manual"
     },
     {
       "model": "lfm3-1.7b",
       "id": "chat-en-3",
-      "score": null,
-      "how": "manual (pending)"
+      "score": 0.5,
+      "how": "manual"
     },
     {
       "model": "lfm3-1.7b",
@@ -180,37 +180,43 @@
       "model": "lfm3-1.7b",
       "id": "reason-es-5",
       "score": 0,
-      "how": "missing"
+      "how": "check",
+      "note": "missing /\\b9\\b/"
     },
     {
       "model": "lfm3-1.7b",
       "id": "reason-en-1",
-      "score": 0,
-      "how": "missing"
+      "score": 1,
+      "how": "check",
+      "note": ""
     },
     {
       "model": "lfm3-1.7b",
       "id": "reason-en-2",
-      "score": 0,
-      "how": "missing"
+      "score": 1,
+      "how": "check",
+      "note": ""
     },
     {
       "model": "lfm3-1.7b",
       "id": "reason-en-3",
-      "score": 0,
-      "how": "missing"
+      "score": 1,
+      "how": "check",
+      "note": ""
     },
     {
       "model": "lfm3-1.7b",
       "id": "reason-en-4",
       "score": 0,
-      "how": "missing"
+      "how": "check",
+      "note": "none of the expected answers"
     },
     {
       "model": "lfm3-1.7b",
       "id": "reason-en-5",
       "score": 0,
-      "how": "missing"
+      "how": "check",
+      "note": "none of the expected answers"
     }
   ]
 }

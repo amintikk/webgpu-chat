@@ -30,6 +30,9 @@ export function splitReasoning(text: string, think: ThinkMarkers, reasoningOn: b
   let reasoning = '';
   let content = t;
   let thinking = false;
+  // Some models (seen with LFM3 and reasoning off) write an answer, then a stray closing tag and the answer
+  // again: whatever precedes a closing tag is treated as reasoning, so the user sees one clean answer.
+  if (!inside && t.includes(think.close)) inside = true;
   if (inside) {
     const end = t.indexOf(think.close);
     if (end < 0) {

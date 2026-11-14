@@ -56,9 +56,16 @@ function regexOf(answer) {
   }
 }
 
+/** What the app shows: the text after the reasoning block (same rule as src/engine/reasoning.ts). */
+export function visible(answer) {
+  const close = answer.lastIndexOf('</think>');
+  if (close >= 0) return answer.slice(close + '</think>'.length).trim();
+  return answer.trimStart().startsWith('<think>') ? '' : answer;
+}
+
 function grade(p, a, model) {
   if (!a) return { score: 0, how: 'missing' };
-  const text = a.answer;
+  const text = visible(a.answer);
   if (p.test) {
     const r = runTest(text, p.test);
     return { score: r.pass ? 1 : 0, how: 'test', note: r.note };

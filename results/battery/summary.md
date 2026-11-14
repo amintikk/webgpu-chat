@@ -5,20 +5,20 @@ Decodificación voraz, razonamiento desactivado, un prompt por conversación, mi
 
 | Modelo | Conversación | Código | Razonamiento | Total | Pendientes | tok/s (CPU, orientativo) |
 |---|---|---|---|---|---|---|
-| lfm3-1.7b | 4/5 | 7/10 | 4/10 | 15/25 | 5 | 2.6 |
+| lfm3-1.7b | 8/10 | 7/10 | 7/10 | 22/30 | 0 | 2.7 |
 
 ## Detalle
 
 | Prompt | lfm3-1.7b |
 |---|---|
-| chat-es-1 | ? |
-| chat-es-2 | ? |
+| chat-es-1 | 0.5 |
+| chat-es-2 | 1 |
 | chat-es-3 | 1 |
 | chat-es-4 | 0 (missing /a ver/) |
 | chat-es-5 | 1 |
-| chat-en-1 | ? |
-| chat-en-2 | ? |
-| chat-en-3 | ? |
+| chat-en-1 | 1 |
+| chat-en-2 | 1 |
+| chat-en-3 | 0.5 |
 | chat-en-4 | 1 |
 | chat-en-5 | 1 |
 | code-es-1 | 1 |
@@ -35,9 +35,9 @@ Decodificación voraz, razonamiento desactivado, un prompt por conversación, mi
 | reason-es-2 | 1 |
 | reason-es-3 | 1 |
 | reason-es-4 | 1 |
-| reason-es-5 | 0 |
-| reason-en-1 | 0 |
-| reason-en-2 | 0 |
-| reason-en-3 | 0 |
-| reason-en-4 | 0 |
-| reason-en-5 | 0 |
+| reason-es-5 | 0 (missing /\b9\b/) |
+| reason-en-1 | 1 |
+| reason-en-2 | 1 |
+| reason-en-3 | 1 |
+| reason-en-4 | 0 (none of the expected answers) |
+| reason-en-5 | 0 (none of the expected answers) |

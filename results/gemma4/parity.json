@@ -1,0 +1,302 @@
+{
+  "model": "gemma-4-12B-it-ONNX",
+  "layers": 48,
+  "source": "google/gemma-4-12B-it@43c9d014b231474fa7212dbb48a762566c2b255d",
+  "cases": [
+    {
+      "name": "es-chat",
+      "prompt": "¿Qué tres consejos darías a alguien que empieza a correr?",
+      "onnx_output": "Para alguien que está dando sus primeros pasos en el running, el mayor desafío no es la falta de velocidad, sino la **constancia y la prevención de lesiones**.\n\nAquí tienes los tres consejos fundamentales para empezar con éxito:\n\n### ",
+      "steps": 48,
+      "original": {
+        "agreement": 0.9167,
+        "identical_greedy_prefix": 10,
+        "mismatches": [
+          {
+            "step": 10,
+            "onnx": " running",
+            "reference": " mundo",
+            "margin": 0.663
+          },
+          {
+            "step": 13,
+            "onnx": " mayor",
+            "reference": " error",
+            "margin": 0.625
+          },
+          {
+            "step": 20,
+            "onnx": " velocidad",
+            "reference": " condición",
+            "margin": 1.626
+          },
+          {
+            "step": 24,
+            "onnx": " **",
+            "reference": " gestión",
+            "margin": 1.069
+          }
+        ],
+        "max_abs_logit_diff_mean": 8.238
+      },
+      "quantized": {
+        "agreement": 1.0,
+        "identical_greedy_prefix": 48,
+        "mismatches": [],
+        "max_abs_logit_diff_mean": 1.298
+      }
+    },
+    {
+      "name": "en-chat",
+      "prompt": "Write a two-sentence thank-you note to a colleague who helped me move house.",
+      "onnx_output": "Thank you so much for your incredible help with my move this weekend. I truly appreciate you giving up your time to make a challenging task so much easier for me!<turn|>",
+      "steps": 34,
+      "original": {
+        "agreement": 0.8235,
+        "identical_greedy_prefix": 21,
+        "mismatches": [
+          {
+            "step": 21,
+            "onnx": " time",
+            "reference": " free",
+            "margin": 3.9
+          },
+          {
+            "step": 23,
+            "onnx": " make",
+            "reference": " help",
+            "margin": 1.075
+          },
+          {
+            "step": 24,
+            "onnx": " a",
+            "reference": " the",
+            "margin": 1.034
+          },
+          {
+            "step": 25,
+            "onnx": " challenging",
+            "reference": " stressful",
+            "margin": 1.786
+          },
+          {
+            "step": 26,
+            "onnx": " task",
+            "reference": " day",
+            "margin": 0.141
+          },
+          {
+            "step": 30,
+            "onnx": " for",
+            "reference": "!",
+            "margin": 0.206
+          }
+        ],
+        "max_abs_logit_diff_mean": 7.317
+      },
+      "quantized": {
+        "agreement": 0.9412,
+        "identical_greedy_prefix": 24,
+        "mismatches": [
+          {
+            "step": 24,
+            "onnx": " a",
+            "reference": " the",
+            "margin": 0.68
+          },
+          {
+            "step": 26,
+            "onnx": " task",
+            "reference": " day",
+            "margin": 0.279
+          }
+        ],
+        "max_abs_logit_diff_mean": 1.264
+      }
+    },
+    {
+      "name": "es-code",
+      "prompt": "Escribe una función en Python que devuelva los números primos menores que n.",
+      "onnx_output": "Para resolver este problema, la forma más eficiente de hacerlo (especialmente para rangos grandes) es utilizando el algoritmo de la **Criba de Eratóstenes**.\n\nAquí tienes el código con una explicación detallada:\n\n```",
+      "steps": 48,
+      "original": {
+        "agreement": 0.9583,
+        "identical_greedy_prefix": 0,
+        "mismatches": [
+          {
+            "step": 0,
+            "onnx": "Para",
+            "reference": "Aquí",
+            "margin": 0.307
+          },
+          {
+            "step": 15,
+            "onnx": " rang",
+            "reference": " números",
+            "margin": 3.006
+          }
+        ],
+        "max_abs_logit_diff_mean": 8.461
+      },
+      "quantized": {
+        "agreement": 0.9792,
+        "identical_greedy_prefix": 15,
+        "mismatches": [
+          {
+            "step": 15,
+            "onnx": " rang",
+            "reference": " números",
+            "margin": 0.454
+          }
+        ],
+        "max_abs_logit_diff_mean": 1.523
+      }
+    },
+    {
+      "name": "en-code",
+      "prompt": "Explain what this JavaScript does: const s = [...new Set(arr)].sort((a, b) => a - b);",
+      "onnx_output": "This line of code is a common JavaScript \"one-liner\" used to **remove duplicate values from an array and sort the remaining numbers in ascending order.**\n\nHere is a step-by-step breakdown of how it works, moving from",
+      "steps": 48,
+      "original": {
+        "agreement": 0.9375,
+        "identical_greedy_prefix": 8,
+        "mismatches": [
+          {
+            "step": 8,
+            "onnx": " \"",
+            "reference": " pattern",
+            "margin": 0.822
+          },
+          {
+            "step": 17,
+            "onnx": " duplicate",
+            "reference": " duplicates",
+            "margin": 0.713
+          },
+          {
+            "step": 34,
+            "onnx": " a",
+            "reference": " the",
+            "margin": 1.676
+          }
+        ],
+        "max_abs_logit_diff_mean": 6.968
+      },
+      "quantized": {
+        "agreement": 0.9583,
+        "identical_greedy_prefix": 34,
+        "mismatches": [
+          {
+            "step": 34,
+            "onnx": " a",
+            "reference": " the",
+            "margin": 0.187
+          },
+          {
+            "step": 46,
+            "onnx": " moving",
+            "reference": " starting",
+            "margin": 0.101
+          }
+        ],
+        "max_abs_logit_diff_mean": 1.425
+      }
+    },
+    {
+      "name": "es-reason",
+      "prompt": "Si un tren sale a las 9:40 y el viaje dura 2 h 35 min, ¿a qué hora llega? Explica el cálculo.",
+      "onnx_output": "Para saber a qué hora llega el tren, debemos sumar el tiempo de duración al tiempo de salida. Aquí tienes el paso a paso:\n\n### 1. Datos iniciales:\n*   **Hora de salida:** 09:",
+      "steps": 48,
+      "original": {
+        "agreement": 0.8958,
+        "identical_greedy_prefix": 0,
+        "mismatches": [
+          {
+            "step": 0,
+            "onnx": "Para",
+            "reference": "El",
+            "margin": 1.523
+          },
+          {
+            "step": 11,
+            "onnx": " el",
+            "reference": " la",
+            "margin": 0.882
+          },
+          {
+            "step": 15,
+            "onnx": " al",
+            "reference": " a",
+            "margin": 2.591
+          },
+          {
+            "step": 23,
+            "onnx": " paso",
+            "reference": " cálculo",
+            "margin": 2.547
+          },
+          {
+            "step": 45,
+            "onnx": "0",
+            "reference": "9",
+            "margin": 1.349
+          }
+        ],
+        "max_abs_logit_diff_mean": 7.788
+      },
+      "quantized": {
+        "agreement": 0.9792,
+        "identical_greedy_prefix": 1,
+        "mismatches": [
+          {
+            "step": 1,
+            "onnx": " saber",
+            "reference": " calcular",
+            "margin": 0.057
+          }
+        ],
+        "max_abs_logit_diff_mean": 1.25
+      }
+    },
+    {
+      "name": "en-reason",
+      "prompt": "A bat and a ball cost $1.10 in total. The bat costs $1.00 more than the ball. How much does the ball cost?",
+      "onnx_output": "The ball costs **$0.05** (5 cents).\n\nHere is the breakdown:\n\n1.  Let the price of the ball be **X**.\n2.  The bat costs $1.00 more than",
+      "steps": 48,
+      "original": {
+        "agreement": 0.9792,
+        "identical_greedy_prefix": 32,
+        "mismatches": [
+          {
+            "step": 32,
+            "onnx": "X",
+            "reference": "$",
+            "margin": 0.729
+          }
+        ],
+        "max_abs_logit_diff_mean": 8.53
+      },
+      "quantized": {
+        "agreement": 1.0,
+        "identical_greedy_prefix": 48,
+        "mismatches": [],
+        "max_abs_logit_diff_mean": 1.655
+      }
+    }
+  ],
+  "agreement": {
+    "original": 0.9234,
+    "quantized": 0.9781
+  },
+  "criteria": {
+    "export_correctness": {
+      "rule": "quantized >= 0.97 and every mismatch has margin < 1.0",
+      "pass": true
+    },
+    "fidelity_to_original": {
+      "rule": "original >= 0.90",
+      "pass": true
+    }
+  },
+  "pass": true
+}

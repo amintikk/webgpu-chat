@@ -1,6 +1,7 @@
 import '@fontsource-variable/inter';
 import '../tokens.css';
 import './site.css';
+import { mountAurora, wireGlow, wireReveal } from '../ui/aurora.ts';
 import { hydrateIcons, icon } from '../ui/icons.ts';
 
 const KEY = 'webgpu-chat-settings';
@@ -64,3 +65,8 @@ if (gpuNote) {
 }
 
 hydrateIcons();
+mountAurora();
+wireGlow();
+wireReveal();
+// The inline safety net in theme.js shows everything if this script never runs.
+(window as unknown as { siteReady?: boolean }).siteReady = true;

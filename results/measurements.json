@@ -1,0 +1,87 @@
+{
+  "_note": "downloadBytes: exact bytes the browser downloads (Hugging Face API sizes at the pinned revision). weightBytes: bytes of the ONNX weight files, which ONNX Runtime uploads to GPU buffers (the KV cache and activations come on top). Real-GPU WebGPU speed and memory could not be measured on the build server (no GPU); the in-app benchmark (Models -> Measure performance) reports them on any device.",
+  "models": [
+    {
+      "id": "lfm3-1.7b",
+      "name": "LFM3 1.7B",
+      "repo": "onnx-community/LFM3-1.7B-ONNX",
+      "revision": "ab9fec4c681a25bec3b48b0b97a62fc2660a2985",
+      "dtype": "q4f16",
+      "published": true,
+      "downloadBytes": 1106010457,
+      "weightBytes": 1087789056,
+      "files": {
+        "onnx/model_q4f16.onnx": 296714,
+        "onnx/model_q4f16.onnx_data": 1087789056,
+        "config.json": 1549,
+        "generation_config.json": 241,
+        "tokenizer.json": 17908635,
+        "tokenizer_config.json": 14262
+      }
+    },
+    {
+      "id": "qwen3.5-2b",
+      "name": "Qwen3.5 2B",
+      "repo": "onnx-community/Qwen3.5-2B-ONNX",
+      "revision": "315216e893038beefcc6eba41ac168913dd0d879",
+      "dtype": "q4f16",
+      "published": false,
+      "downloadBytes": 1404075467,
+      "weightBytes": 1383788544,
+      "files": {
+        "onnx/embed_tokens_q4f16.onnx": 1064,
+        "onnx/embed_tokens_q4f16.onnx_data": 294010880,
+        "onnx/decoder_model_merged_q4f16.onnx": 1046438,
+        "onnx/decoder_model_merged_q4f16.onnx_data": 1089777664,
+        "config.json": 2993,
+        "generation_config.json": 248,
+        "tokenizer.json": 19226111,
+        "tokenizer_config.json": 10069
+      }
+    },
+    {
+      "id": "qwen3.5-4b",
+      "name": "Qwen3.5 4B",
+      "repo": "onnx-community/Qwen3.5-4B-ONNX",
+      "revision": "23ac3352f288351eddcdf141b32f4f66587f7e2d",
+      "dtype": "q4f16",
+      "published": true,
+      "downloadBytes": 2822897182,
+      "weightBytes": 2802235392,
+      "files": {
+        "onnx/embed_tokens_q4f16.onnx": 1064,
+        "onnx/embed_tokens_q4f16.onnx_data": 367513600,
+        "onnx/decoder_model_merged_q4f16.onnx": 1421099,
+        "onnx/decoder_model_merged_q4f16.onnx_data": 2067208192,
+        "onnx/decoder_model_merged_q4f16.onnx_data_1": 367513600,
+        "config.json": 3198,
+        "generation_config.json": 248,
+        "tokenizer.json": 19226111,
+        "tokenizer_config.json": 10070
+      }
+    },
+    {
+      "id": "gemma4-12b",
+      "name": "Gemma 4 12B",
+      "repo": "AMINOXDEV/gemma-4-12B-it-ONNX",
+      "revision": "90e0a27bf539717b6055d7e434b9faa1f0dbd9ff",
+      "dtype": "q4f16",
+      "published": true,
+      "downloadBytes": 7535137926,
+      "weightBytes": 7502476288,
+      "files": {
+        "config.json": 3555,
+        "generation_config.json": 260,
+        "tokenizer.json": 32157161,
+        "tokenizer_config.json": 22222,
+        "onnx/embed_tokens_q4f16.onnx": 856,
+        "onnx/embed_tokens_q4f16.onnx_data": 581959680,
+        "onnx/decoder_model_merged_q4f16.onnx": 477584,
+        "onnx/decoder_model_merged_q4f16.onnx_data": 1873099776,
+        "onnx/decoder_model_merged_q4f16.onnx_data_1": 1845312512,
+        "onnx/decoder_model_merged_q4f16.onnx_data_2": 1855536128,
+        "onnx/decoder_model_merged_q4f16.onnx_data_3": 1346568192
+      }
+    }
+  ]
+}

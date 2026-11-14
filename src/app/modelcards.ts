@@ -53,7 +53,7 @@ export function card(id: ModelId): Card {
           t('Muy buen español y más de 140 idiomas.'),
         ],
         limits: [
-          t('Descarga de unos 8 GB y carga lenta la primera vez.'),
+          t('Descarga de 7,5 GB y carga lenta la primera vez.'),
           t('Necesita una GPU potente; en equipos justos fallará al cargar o irá muy lento.'),
           t('Exportación propia del modelo oficial cuantizada a 4 bits: algo menos precisa que el original.'),
           t('Contexto limitado a 4.096 tokens en esta web para contener la memoria.'),

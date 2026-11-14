@@ -7,6 +7,7 @@ import { AVAILABLE, MODELS, downloadBytes, modelById, type ModelId, type ModelIn
 import type { ChatMessage, GenOptions, GenStats } from '../engine/protocol.ts';
 import { lang, locale, localPath, t } from '../i18n.ts';
 import { $, fmtBytes, fmtDuration, fmtNum, h, toast } from '../ui/dom.ts';
+import { mountAurora, setMood, wireGlow } from '../ui/aurora.ts';
 import { hydrateIcons, icon } from '../ui/icons.ts';
 import { cacheStatus, deleteModel, deleteOrphans, isComplete, orphanBytes, storageEstimate, type CacheEntry } from './cache.ts';
 import { deleteConversation, listConversations, newId, saveConversation, titleFrom, type Conversation, type StoredMessage } from './db.ts';
@@ -238,13 +239,16 @@ function renderThread() {
   scrollToEnd(true);
 }
 
+let emptyShown = false;
 function emptyState(): HTMLElement {
-  const box = h('div', { class: 'empty' });
+  // The entrance animation plays once per page view, not on every repaint.
+  const box = h('div', { class: emptyShown ? 'empty' : 'empty enter' });
+  emptyShown = true;
   if (gpu && !gpu.ok) {
     box.append(noWebGpu(gpu));
     return box;
   }
-  box.append(h('h1', { class: 'empty-title' }, t('¿En qué te ayudo?')));
+  box.append(h('h1', { class: 'empty-title' }, h('span', {}, t('¿En qué te ayudo?'))));
   box.append(
     h(
       'p',
@@ -259,7 +263,7 @@ function emptyState(): HTMLElement {
       box.append(
         h(
           'div',
-          { class: 'download-cta' },
+          { class: 'download-cta', 'data-glow': '' },
           h('div', {}, h('strong', {}, t('Descarga {m} para empezar', { m: selected.name })), h('span', {}, t('{s} desde Hugging Face, una sola vez. Después funciona sin conexión.', { s: fmtBytes(downloadBytes(selected)) }))),
           h('button', { type: 'button', class: 'btn primary', onclick: () => void loadModel(selected!.id) }, icon('download', 16), t('Descargar')),
         ),
@@ -277,7 +281,7 @@ function emptyState(): HTMLElement {
       'div',
       { class: 'suggestions' },
       ...sugg.map((s) =>
-        h('button', { type: 'button', class: 'suggestion', onclick: () => ((el.input.value = s), autosize(), el.input.focus(), updateContext()) }, s),
+        h('button', { type: 'button', class: 'suggestion', 'data-glow': '', onclick: () => ((el.input.value = s), autosize(), el.input.focus(), updateContext()) }, s),
       ),
     ),
   );
@@ -490,6 +494,7 @@ async function loadModel(id: ModelId) {
     /* best effort */
   }
   loading = { model: id, loaded: 0, total: downloadBytes(m), stage: 'download' };
+  setMood('loading');
   renderPicker();
   renderThreadIfEmpty();
   renderLoad();
@@ -515,6 +520,7 @@ async function loadModel(id: ModelId) {
     loading = null;
     showError(loadErrorText(msg, m));
   }
+  setMood('idle');
   renderLoad();
   renderPicker();
   renderThreadIfEmpty();
@@ -645,6 +651,7 @@ async function respond() {
   const m = selected!;
   const opts = genOptions(m);
   generating = true;
+  setMood('thinking');
   renderComposerState();
   const { chat, dropped } = await fitContext(m, c.messages, opts.maxTokens);
   if (dropped) toast(t('Se han omitido {n} mensajes antiguos para no superar el contexto del modelo.', { n: dropped }));
@@ -687,6 +694,7 @@ async function respond() {
   try {
     const r = await engine.generate(chat, opts, {
       onDelta: (d) => {
+        setMood(d.thinking || !d.content ? 'thinking' : 'writing');
         pending = d;
         if (!raf) raf = requestAnimationFrame(paint);
       },
@@ -701,6 +709,7 @@ async function respond() {
   }
   cancelAnimationFrame(raf);
   generating = false;
+  setMood('idle');
   c.messages.push(msg);
   await persist(c);
   if (current?.id === c.id) {
@@ -1077,6 +1086,8 @@ function gpuSummary(): HTMLElement {
 // Boot
 
 async function boot() {
+  mountAurora();
+  wireGlow();
   applyTheme();
   hydrateIcons();
   $('btn-theme').addEventListener('click', () => {

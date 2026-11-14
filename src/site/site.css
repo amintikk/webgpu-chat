@@ -546,3 +546,230 @@ table.data tr:last-child td {
   margin-left: auto;
   margin-right: auto;
 }
+
+/* ===========================================================================================
+   Aurora layer for the site: glass over the living background, Apple-like scale and rhythm.
+   =========================================================================================== */
+body.site > header,
+body.site > main,
+body.site > footer {
+  position: relative;
+  z-index: 1;
+}
+.site-top {
+  background: var(--glass);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+  border-bottom: 1px solid var(--border);
+}
+.brand strong {
+  font-weight: 640;
+  letter-spacing: -0.02em;
+}
+.site-nav a {
+  transition: color 0.2s, background 0.2s;
+}
+.hero {
+  padding: 120px 0 56px;
+}
+.hero h1 {
+  font-size: clamp(42px, 7.4vw, 88px);
+  line-height: 1.02;
+  letter-spacing: -0.05em;
+  font-weight: 700;
+  margin: 26px auto 22px;
+  max-width: 980px;
+}
+.hero .lead {
+  font-size: clamp(17px, 1.6vw, 21px);
+  line-height: 1.5;
+  max-width: 660px;
+  letter-spacing: -0.012em;
+}
+.eyebrow {
+  background: var(--glass);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+  border-color: var(--border-strong);
+}
+.eyebrow .ico {
+  color: var(--au-1);
+}
+.hero-cta {
+  margin-top: 36px;
+}
+.hero-cta .btn {
+  height: 50px;
+  padding: 0 26px;
+  font-size: 16px;
+}
+.shot {
+  margin-top: 72px;
+  border-radius: 26px;
+  border: 1px solid var(--border-strong);
+  background: var(--glass);
+  padding: 8px;
+  box-shadow: var(--shadow), 0 0 120px -30px color-mix(in srgb, var(--au-3) 55%, transparent);
+}
+.shot img {
+  border-radius: 19px;
+}
+section.block {
+  padding: 112px 0;
+  border-top: 0;
+}
+section.block h2 {
+  font-size: clamp(32px, 4.6vw, 54px);
+  letter-spacing: -0.045em;
+  line-height: 1.05;
+  font-weight: 700;
+  margin-bottom: 18px;
+}
+.section-lead {
+  font-size: clamp(16px, 1.5vw, 19px);
+  line-height: 1.55;
+  margin-bottom: 48px;
+}
+.point,
+.model,
+.faq details,
+.warn-box,
+.table-wrap {
+  background: var(--surface);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+}
+.point,
+.model {
+  border-radius: var(--r-xl);
+  padding: 28px;
+  transition: transform 0.5s var(--spring), box-shadow 0.4s;
+}
+.point:hover,
+.model:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 24px 60px -24px color-mix(in srgb, var(--au-3) 45%, transparent);
+}
+.point .ico {
+  width: 40px;
+  height: 40px;
+  padding: 9px;
+  border-radius: 12px;
+  color: #05060a;
+  background: var(--aurora);
+}
+.point h3 {
+  font-size: 18px;
+  letter-spacing: -0.02em;
+  margin-top: 18px;
+}
+.model.featured {
+  border-color: transparent;
+  box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--au-2) 70%, transparent), 0 30px 80px -30px color-mix(in srgb, var(--au-2) 55%, transparent);
+}
+.model h3 {
+  font-size: 21px;
+  letter-spacing: -0.025em;
+}
+.tier.recommended {
+  background: color-mix(in srgb, var(--au-1) 16%, transparent);
+  color: var(--accent);
+}
+.model summary,
+.doc a,
+.section-lead a {
+  color: inherit;
+  text-decoration-color: color-mix(in srgb, var(--au-2) 70%, transparent);
+}
+.step::before {
+  background: var(--aurora);
+  color: #05060a;
+  box-shadow: 0 6px 18px -6px color-mix(in srgb, var(--au-3) 70%, transparent);
+}
+.step h3 {
+  font-size: 17px;
+  letter-spacing: -0.02em;
+}
+.warn-box {
+  border-radius: var(--r-xl);
+  color: var(--text);
+}
+.warn-box > .ico {
+  color: var(--busy);
+}
+.warn-box p {
+  color: var(--text-2);
+}
+.faq details {
+  border-radius: 20px;
+  padding: 18px 22px;
+  margin-bottom: 10px;
+  transition: background 0.3s;
+}
+.faq details[open] {
+  background: var(--glass-strong);
+}
+.table-wrap {
+  border-radius: 20px;
+}
+table.data th {
+  background: var(--surface-2);
+}
+.cta-final h2 {
+  font-size: clamp(40px, 6vw, 72px) !important;
+}
+.cta-final .btn {
+  height: 52px;
+  padding: 0 30px;
+  font-size: 16px;
+}
+.doc {
+  padding: 88px 0 112px;
+}
+.doc h1 {
+  font-size: clamp(36px, 5vw, 52px);
+  letter-spacing: -0.045em;
+}
+.doc .card,
+.doc pre.license {
+  border-radius: 20px;
+  background: var(--surface);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+}
+.site-foot {
+  background: var(--glass);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+  border-top: 1px solid var(--border);
+}
+@media (max-width: 900px) {
+  .hero {
+    padding: 72px 0 32px;
+  }
+  .site-nav {
+    background: var(--glass-strong);
+    backdrop-filter: var(--blur);
+    -webkit-backdrop-filter: var(--blur);
+  }
+  section.block {
+    padding: 72px 0;
+  }
+  .point,
+  .model {
+    padding: 22px;
+  }
+}
+.hero h1,
+section.block h2,
+.hero .lead,
+.section-lead {
+  text-wrap: balance;
+}
+@media (max-width: 600px) {
+  .hero h1 br {
+    display: none;
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "_criteria": "Solo para prompts sin comprobación automática (o para rebajar un aprobado automático). 1 = cumple la consigna; 0.5 = contenido correcto pero incumple formato o longitud pedidos; 0 = incorrecto o no responde. Se puntúa el texto que vería el usuario (tras el bloque de razonamiento).",
+  "lfm3-1.7b": {
+    "chat-es-1": 0.5,
+    "chat-es-2": 1,
+    "chat-en-1": 1,
+    "chat-en-2": 1,
+    "chat-en-3": 0.5
+  }
+}

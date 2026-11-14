@@ -39,13 +39,16 @@ const dtype = m.single ? dtypeName : { embed_tokens: dtypeName, decoder_model_me
 const prompts = JSON.parse(readFileSync(join(here, 'prompts.json'), 'utf8')).slice(0, limit || undefined);
 const outDir = join(here, '../../results/battery');
 mkdirSync(outDir, { recursive: true });
-const outFile = join(outDir, `${name}.json`);
+const outFile = join(outDir, `${name}${opt('--suffix', '')}.json`);
 const prev = existsSync(outFile) ? JSON.parse(readFileSync(outFile, 'utf8')) : null;
 const done = new Map((prev?.answers ?? []).map((a) => [a.id, a]));
 
 const t0 = Date.now();
 const tokenizer = await AutoTokenizer.from_pretrained(id, { revision: m.revision });
-const model = await m.cls.from_pretrained(id, { revision: m.revision, dtype, device: 'cpu' });
+// --mmap: map the weight files instead of copying them into ONNX Runtime's memory (slower; for big models on a
+// machine without spare RAM).
+const session_options = args.includes('--mmap') ? { extra: { session: { disable_prepacking: '1' } } } : undefined;
+const model = await m.cls.from_pretrained(id, { revision: m.revision, dtype, device: 'cpu', session_options });
 console.log(`${name} loaded in ${((Date.now() - t0) / 1000).toFixed(0)} s`);
 
 const answers = [];

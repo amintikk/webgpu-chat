@@ -41,6 +41,139 @@
       "tokens": 15,
       "ms": 12166,
       "truncated": false
+    },
+    {
+      "id": "chat-en-1",
+      "answer": "Dear [Colleague's Name], I wanted to take a moment to sincerely thank you for your incredible help with moving; your patience and kindness made the entire process so much smoother than I could have managed alone.\n\nI truly appreciate everything you did to make this transition a breeze, and I hope you're having a wonderful time settling in.",
+      "tokens": 69,
+      "ms": 116900,
+      "truncated": false
+    },
+    {
+      "id": "chat-en-2",
+      "answer": "Weather refers to the short-term atmospheric conditions, such as temperature and precipitation, which can change rapidly. In contrast, climate describes the long-term patterns and averages of weather over a period of time, typically 30 years or more. While weather is variable and local, climate is relatively stable and specific to a region.",
+      "tokens": 65,
+      "ms": 69725,
+      "truncated": false
+    },
+    {
+      "id": "chat-en-3",
+      "answer": "*   **Hiking Boots** (Sturdy, broken-in for long distances)\n*   **Backpack** (40–50L capacity)\n*   **Water** (2L bottle + purification tablets)\n*   **Food** (High-calorie snacks + lunch)\n*   **Sun Protection** (Sunscreen, sunglasses, hat)\n*   **First Aid Kit** (Bandages, blister treatment, pain relievers)\n*   **Emergency Whistle**\n*   **Map & Compass** (Or GPS device)",
+      "tokens": 117,
+      "ms": 118889,
+      "truncated": false
+    },
+    {
+      "id": "chat-en-4",
+      "answer": "{\n  \"name\": \"Laura Gómez\",\n  \"date\": \"3 March 2026\",\n  \"amount\": \"1,250 euros\"\n}",
+      "tokens": 40,
+      "ms": 38177,
+      "truncated": false
+    },
+    {
+      "id": "chat-en-5",
+      "answer": "The novel *One Hundred Years of Solitude* was written by the Colombian author **Gabriel García Márquez**. It was first published in **1967**.\n\nPublished by the Spanish publishing house Ediciones Calambó, the book is a landmark work of magical realism and is widely considered one of the greatest novels in the English language.",
+      "tokens": 71,
+      "ms": 43791,
+      "truncated": false
+    },
+    {
+      "id": "code-es-1",
+      "answer": "```python\ndef es_primo(n):\n    if n <= 1:\n        return False\n    if n <= 3:\n        return True\n    if n % 2 == 0 or n % 3 == 0:\n        return False\n    i = 5\n    while i * i <= n:\n        if n % i == 0 or n % (i + 2) == 0:\n            return False\n        i += 6\n    return True\n```",
+      "tokens": 110,
+      "ms": 100471,
+      "truncated": false
+    },
+    {
+      "id": "code-es-2",
+      "answer": "function invertirPalabras(frase) {\n    return frase.split('').reverse().join(' ');\n}\n\n// Ejemplo de uso:\n// invertirPalabras(\"hola mundo\") -> \"duno olah\"",
+      "tokens": 46,
+      "ms": 62636,
+      "truncated": false
+    },
+    {
+      "id": "code-es-3",
+      "answer": "```python\ndef contar_vocales(texto):\n    vocales = \"aeiouAEIOU\"\n    contador = 0\n    for char in texto:\n        if char in vocales:\n            contador += 1\n    return contador\n```",
+      "tokens": 57,
+      "ms": 70126,
+      "truncated": false
+    },
+    {
+      "id": "code-es-4",
+      "answer": "```sql\nSELECT \n    c.nombre,\n    SUM(p.importe) AS total_gastado\nFROM \n    clientes c\nJOIN \n    pedidos p ON c.id = p.cliente_id\nGROUP BY \n    c.id, c.nombre\nORDER BY \n    total_gastado DESC\nLIMIT 3;\n```",
+      "tokens": 69,
+      "ms": 103281,
+      "truncated": false
+    },
+    {
+      "id": "code-es-5",
+      "answer": "Este código es una función muy simple y estándar en programación. Aquí te explico detalladamente qué hace y si tiene errores.\n\n### ¿Qué hace este código?\n\nLa función `media(lista)` tiene dos propósitos principales:\n\n1.  **Calcula el promedio (media aritmética):**\n    *   Toma una lista de números (ej. `[1, 2, 3]`).\n    *   Suma todos los elementos de la lista (`sum(lista)`).\n    *   Divide ese resultado por el número total de elementos (`len(lista)`).\n    *   **Resultado:** Devuelve el promedio.\n\n2.  **Gestión de casos especiales (Edge cases):**\n    *   Si la lista está vacía (`[]`), `len(lista)` será `0`. En Python, `sum([])` también es `0`. Por lo tanto, la división `0 / 0` se ejecutará.\n    *   **Nota importante:** En Python, la división por cero (`/`) genera un error de ejecución (`ZeroDivisionError`), no un resultado numérico.\n\n---\n\n### ¿Tiene algún error?\n\n**Sí, tiene un error potencial si la lista está vacía.**\n\nSi intentas ejecutar este código con una lista vacía, fallará. Aquí te muestro cómo se comporta:\n\n```python\ndef media(lista):\n    return sum(lista) / len(lista)\n\n# Ejemplo de error\ntry:\n    resultado = media([])\n    print(f\"El resultado es: {resultado}\")\nexcept ZeroDivisionError as e:\n    print(f\"¡Error! No se puede dividir por cero: {e}\")\n```\n\n**Salida esperada:**\n```text\n¡Error! No se puede dividir por cero: ZeroDivisionError\n```\n\n### ¿Cómo solucionarlo?\n\nPara evitar este error, debes verificar si la lista tiene elementos antes de intentar la división. Aquí tienes dos formas de hacerlo:\n\n#### Opción 1: Usar `if` (Muy común)\n```python\ndef media(lista):\n    if len(lista) == 0:\n        return 0 # O None, dependiendo de lo que desees\n    return sum(lista) / len(lista)\n```\n\n#### Opción 2: Usar `try-except` (Más robusta)\n```python\ndef media(lista):\n    try:\n        return sum(lista) / len(lista)\n    except ZeroDivisionError:\n        return 0 # O un valor por defecto\n```\n\n### Resumen\n*   **Función:** Calcula el promedio de una lista.\n*   **Error:** Genera un error si la lista está vacía (`len(lista) == 0`).\n*   **Solución:** Añade una comprobación (`if len(lista) == 0`) o usa `try-except`.",
+      "tokens": 609,
+      "ms": 680636,
+      "truncated": false
+    },
+    {
+      "id": "code-en-1",
+      "answer": "```python\ndef fizzbuzz(n):\n    def is_fizz(n):\n        return n % 3 == 0\n    def is_buzz(n):\n        return n % 5 == 0\n\n    result = []\n    for i in range(1, n + 1):\n        if is_fizz(i) and is_buzz(i):\n            result.append(\"FizzBuzz\")\n        elif is_fizz(i):\n            result.append(\"Fizz\")\n        elif is_buzz(i):\n            result.append(\"Buzz\")\n        else:\n            result.append(str(i))\n    return result\n```",
+      "tokens": 133,
+      "ms": 128307,
+      "truncated": false
+    },
+    {
+      "id": "code-en-2",
+      "answer": "```javascript\nfunction deepClone(obj) {\n  // Handle null and undefined\n  if (obj === null || obj === undefined) {\n    return obj;\n  }\n\n  // Handle primitive values (numbers, strings, booleans, null, undefined)\n  if (typeof obj === 'number' || typeof obj === 'string' || typeof obj === 'boolean' || typeof obj === 'symbol') {\n    return obj;\n  }\n\n  // Handle Date objects\n  if (obj instanceof Date) {\n    return new Date(obj.getTime());\n  }\n\n  // Handle RegExp objects\n  if (obj instanceof RegExp) {\n    return obj;\n  }\n\n  // Handle Map and Set objects\n  if (obj instanceof Map || obj instanceof Set) {\n    return obj;\n  }\n\n  // Handle ArrayBuffer and Uint8Array\n  if (obj instanceof ArrayBuffer || obj instanceof Uint8Array || obj instanceof Uint8ClampedArray || obj instanceof Uint16Array || obj instanceof Uint32Array || obj instanceof Int8Array || obj instanceof Int16Array || obj instanceof Int32Array || obj instanceof Float32Array || obj instanceof Float64Array) {\n    return obj;\n  }\n\n  // Handle UintArray and BigInt\n  if (obj instanceof UintArray || obj instanceof BigInt) {\n    return obj;\n  }\n\n  // Handle TypedArrays\n  if (obj instanceof TypedArray) {\n    return obj;\n  }\n\n  // Handle Object\n  if (typeof obj === 'object') {\n    // Check if it's an array\n    if (Array.isArray(obj)) {\n      return obj.map(item => deepClone(item));\n    }\n\n    // Check if it's a Map\n    if (obj instanceof Map) {\n      return obj.map(value => deepClone(value));\n    }\n\n    // Check if it's a Set\n    if (obj instanceof Set) {\n      return [...obj].map(item => deepClone(item));\n    }\n\n    // Check if it's an ArrayBuffer\n    if (obj instanceof ArrayBuffer) {\n      return new Uint8Array(obj);\n    }\n\n    // Check if it's a Uint8Array\n    if (obj instanceof Uint8Array) {\n      return new Uint8Array(obj);\n    }\n\n    // Check if it's a Uint8ClampedArray\n    if (obj instanceof Uint8ClampedArray) {\n      return new Uint8Array(obj);\n    }\n\n    // Check if it's a Uint16Array\n    if (obj instanceof Uint16Array) {\n      return new Uint16Array(obj);\n    }\n\n    // Check if it's a Uint32Array\n    if (obj instanceof Uint32Array) {\n      return new Uint32Array(obj);\n    }\n\n    // Check if it's an Int8Array\n    if (obj instanceof Int8Array) {\n      return new Int8Array(obj);\n    }\n\n    // Check if it's an Int16Array\n    if (obj instanceof Int16Array) {\n      return new Int16Array(obj);\n    }\n\n    // Check if it's an Int32Array\n    if (obj instanceof Int32Array) {\n      return new Int32Array(obj);\n    }\n\n    // Check if it's a Float32Array\n    if (obj instanceof Float32Array) {\n      return new Float32Array(obj);\n    }\n\n    // Check if it's a Float64Array\n    if (obj instanceof",
+      "tokens": 768,
+      "ms": 813156,
+      "truncated": true
+    },
+    {
+      "id": "code-en-3",
+      "answer": "```python\ndef merge_intervals(intervals):\n    if not intervals:\n        return []\n\n    # Sort intervals by their start time\n    intervals.sort(key=lambda x: x[0])\n\n    # Initialize result list with the first interval\n    result = [intervals[0]]\n\n    # Iterate through the rest of the intervals\n    for current in intervals[1:]:\n        # If current interval overlaps with the last interval in result\n        if current[0] <= result[-1][1]:\n            # Merge by updating the end time of the last interval\n            result[-1] = (result[-1][0], max(result[-1][1], current[1]))\n        else:\n            # No overlap, add current interval as a new interval\n            result.append(current)\n\n    return result\n```",
+      "tokens": 175,
+      "ms": 150207,
+      "truncated": false
+    },
+    {
+      "id": "code-en-4",
+      "answer": "It converts the input array into a sorted list of unique elements by first removing duplicates with `Set` and then sorting them numerically.",
+      "tokens": 28,
+      "ms": 27282,
+      "truncated": false
+    },
+    {
+      "id": "code-en-5",
+      "answer": "`^\\d{5}$`\n\nA simple regex like `^\\d{5}$` matches any five-digit string, but it does not enforce the specific range (01000–52999) or the \"postal code\" structure (which typically starts with a digit and ends with a letter). To enforce the exact range and format, you would need a more complex pattern involving character classes and ranges, such as: `^(0-5)\\d{4}$`. However, since the prompt asks for a regex that matches the code *exactly* (implying the strict format of a postal code) and the range, the most accurate regex is: `^(0-5)\\d{4}$`.",
+      "tokens": 152,
+      "ms": 140812,
+      "truncated": false
+    },
+    {
+      "id": "reason-es-1",
+      "answer": "Para calcular la hora de llegada, debemos sumar el tiempo de viaje al tiempo de salida:\n\n1.  **Hora de salida:** 9:40\n2.  **Tiempo de viaje:** 2 horas y 35 minutos.\n\nSumando los minutos:\n*   40 minutos + 35 minutos = 75 minutos.\n*   Como no hay 60 minutos en la parte decimal, debemos llevar los 75 minutos a la siguiente hora.\n\nSumando las horas:\n*   9 horas + 2 horas = 11 horas.\n*   11 horas + (75 minutos - 60 minutos) = 11 horas + 15 minutos.\n\nPor lo tanto, el tren llega a las **11:15**.",
+      "tokens": 171,
+      "ms": 170201,
+      "truncated": false
+    },
+    {
+      "id": "reason-es-2",
+      "answer": "Primero, calculamos el total inicial de manzanas que tienes:\n3 cajas $\\times$ 12 manzanas por caja = **36 manzanas**.\n\nLuego, restamos las que regales y las que se pudren:\n36 manzanas iniciales - 7 manzanas regaladas - 5 manzanas que se pudren = **24 manzanas**.\n\n**Respuesta:** Te quedan **24** manzanas.",
+      "tokens": 104,
+      "ms": 159731,
+      "truncated": false
+    },
+    {
+      "id": "reason-es-3",
+      "answer": "Para determinar quién es la persona más joven, debemos analizar la relación de edad que nos ha dado:\n\n1.  **Ana es mayor que Luis:** Esto significa que Ana tiene más años que Luis.\n2.  **Luis es mayor que Marta:** Esto significa que Luis tiene más años que Marta.\n\nSi combinamos estas dos afirmaciones, la secuencia de edad es:\n*   Ana > Luis > Marta\n\nEn esta secuencia, **Marta** tiene la menor cantidad de años. Por lo tanto, Marta es la persona más joven.\n\n**Respuesta:** Marta.",
+      "tokens": 123,
+      "ms": 160686,
+      "truncated": false
+    },
+    {
+      "id": "reason-es-4",
+      "answer": "Para resolver este problema, debemos calcular el precio después de cada cambio secuencial, ya que el precio inicial se usará como base para el siguiente cambio.\n\n1.  **Cálculo del precio después del aumento del 25%:**\n    El precio inicial es de 80 €.\n    $80 \\times 1,25 = 100$ €.\n    El precio después de subir el 25% es de **100 €**.\n\n2.  **Cálculo del precio final después de la bajada del 20%:**\n    Ahora tomamos el precio de 100 € y lo reducimos un 20 %.\n    $100 \\times (1 - 0,20) = 100 \\times 0,80 = 80$ €.\n\nOtra forma de verlo es multiplicando ambos factores:\n$80 \\times 1,25 \\times 0,80 = 100 \\times 0,80 = 80$ €.\n\nEl precio final es de **80 €**.",
+      "tokens": 239,
+      "ms": 309026,
+      "truncated": false
     }
   ]
 }

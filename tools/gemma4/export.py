@@ -361,6 +361,15 @@ def write_configs(out: str, src: str, files: dict[str, list[str]], n_layers: int
     json.dump(cfg, open(os.path.join(out, "config.json"), "w"), indent=2)
     for f in ("generation_config.json", "tokenizer.json", "tokenizer_config.json", "chat_template.jinja"):
         shutil.copy(hf_hub_download(REPO, f, revision=REVISION, local_dir=src), os.path.join(out, f))
+    embed_chat_template(out)
+
+
+def embed_chat_template(out: str):
+    """Transformers.js reads the official template from tokenizer_config.json (as in onnx-community repos)."""
+    path = os.path.join(out, "tokenizer_config.json")
+    tok = json.load(open(path))
+    tok["chat_template"] = open(os.path.join(out, "chat_template.jinja")).read()
+    json.dump(tok, open(path, "w"), indent=2, ensure_ascii=False)
 
 
 def main():
