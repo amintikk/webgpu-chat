@@ -584,10 +584,10 @@ function renderLoad() {
       ? t('Preparando {m} en la GPU…', { m: m.name })
       : loading.stage === 'compile' || pct >= 99.9
         ? t('Cargando {m} en la GPU…', { m: m.name })
-        : t('Descargando {m}: {a} de {b}', { m: m.name, a: fmtBytes(loading.loaded), b: fmtBytes(loading.total) });
+        : t('Descargando {m} · {a} de {b}', { m: m.name, a: fmtBytes(loading.loaded), b: fmtBytes(loading.total) });
   box.hidden = false;
   box.replaceChildren(
-    h('div', { class: 'load-row' }, h('span', {}, label), h('span', { class: 'load-pct' }, loading.stage === 'download' && pct < 99.9 ? `${fmtNum(pct, 0)} %` : '')),
+    h('div', { class: 'load-row' }, h('span', {}, label), h('span', { class: 'load-pct' }, loading.stage === 'download' && pct < 99.9 ? `${fmtNum(pct, 0)}\u00a0%` : '')),
     h('div', { class: `bar${loading.stage !== 'download' || pct >= 99.9 ? ' indeterminate' : ''}` }, h('i', { style: null, 'data-w': pct.toFixed(1) })),
   );
   const bar = box.querySelector<HTMLElement>('.bar i');

@@ -64,7 +64,7 @@ export const EN: Record<string, string> = {
   'No se ha podido cargar {m}: {e}': 'Could not load {m}: {e}',
   'Preparando {m} en la GPU…': 'Preparing {m} on the GPU…',
   'Cargando {m} en la GPU…': 'Loading {m} on the GPU…',
-  'Descargando {m}: {a} de {b}': 'Downloading {m}: {a} of {b}',
+  'Descargando {m} · {a} de {b}': 'Downloading {m} · {a} of {b}',
   'Parar (Esc)': 'Stop (Esc)',
   'Enviar (Intro)': 'Send (Enter)',
   'WebGPU no disponible': 'WebGPU unavailable',
