@@ -134,6 +134,9 @@ export async function reportText(extra: string[] = []): Promise<string> {
   const out: string[] = [];
   out.push('== WebGPU Chat · informe de depuración ==');
   out.push(`fecha: ${new Date().toString()}`);
+  // The build that is running (its hashed script name): tells whether the page is the latest version.
+  const app = document.querySelector<HTMLScriptElement>('script[type="module"][src*="/assets/main-"]')?.getAttribute('src') ?? '';
+  out.push(`versión de la app: ${app.replace(/^.*\/assets\//, '').replace(/\.js.*$/, '') || 'n/d'}`);
   out.push(`navegador: ${navigator.userAgent}`);
   out.push(`marcas: ${(nav.userAgentData?.brands ?? []).map((b) => `${b.brand} ${b.version}`).join(', ') || 'n/d'}`);
   out.push(`plataforma: ${nav.userAgentData?.platform ?? navigator.platform}`);
