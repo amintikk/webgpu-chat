@@ -39,11 +39,18 @@ function versionPublic(): Plugin {
   };
   return {
     name: 'version-public',
-    transformIndexHtml(html) {
-      return html.replace(/(src|href)="(\/[^"?#]+\.(?:svg|png|ico|js|webmanifest|css))"/g, (m, attr: string, path: string) => {
+    // After Vite's own HTML processing, which rewrites srcset lists.
+    transformIndexHtml: {
+      order: 'post',
+      handler(html) {
+      const version = (path: string) => {
         const file = join(pub, path);
-        return existsSync(file) ? `${attr}="${path}?v=${hash(file)}"` : m;
-      });
+        return existsSync(file) ? `${path}?v=${hash(file)}` : path;
+      };
+      return html
+        .replace(/(src|href)="(\/[^"?#]+\.(?:svg|png|webp|ico|js|webmanifest|css))"/g, (_m, attr: string, path: string) => `${attr}="${version(path)}"`)
+        .replace(/srcset="([^"]+)"/g, (_m, list: string) => `srcset="${list.replace(/(\/[^\s,?#]+\.(?:png|webp))/g, (p: string) => version(p))}"`);
+      },
     },
   };
 }
@@ -68,6 +75,19 @@ function offline(): Plugin {
         }
       };
       walk(dist);
+      // Vite rewrites srcset lists after the HTML hooks, dropping ?v=; version them in the final pages.
+      const pub = resolve(__dirname, 'public');
+      for (const f of files.filter((x) => x.endsWith('.html'))) {
+        const file = join(dist, f);
+        const html = readFileSync(file, 'utf8');
+        const out = html.replace(/srcset="([^"]+)"/g, (_m, list: string) =>
+          `srcset="${list.replace(/(\/[^\s,?#]+\.(?:png|webp))(?=[\s,]|$)/g, (p: string) => {
+            const src = join(pub, p);
+            return existsSync(src) ? `${p}?v=${createHash('sha256').update(readFileSync(src)).digest('hex').slice(0, 10)}` : p;
+          })}"`,
+        );
+        if (out !== html) writeFileSync(file, out);
+      }
       const keep = files.filter((f) => !/^\/(sw\.js|404\.html|404\.css|robots\.txt|sitemap\.xml)$/.test(f) && !/^\/assets\/ort-wasm.*\.wasm$/.test(f)); // the app loads the runtime from /ort/
       const urls = keep.map((f) => f.replace(/index\.html$/, ''));
       const version = createHash('sha256').update(keep.map((f) => f + ':' + statSync(join(dist, f)).size + ':' + createHash('sha256').update(readFileSync(join(dist, f))).digest('hex')).join('\n')).digest('hex').slice(0, 12);

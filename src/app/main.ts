@@ -151,7 +151,7 @@ function convItem(c: Conversation): HTMLElement {
   const title = h('span', { class: 'conv-title' }, c.title);
   const row = h(
     'div',
-    { class: `conv${active ? ' active' : ''}`, role: 'listitem' },
+    { class: `conv${active ? ' active' : ''}` },
     h('button', { type: 'button', class: 'conv-open', onclick: () => openConversation(c.id), 'aria-current': active ? 'page' : null }, title),
     h(
       'div',
