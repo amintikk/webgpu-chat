@@ -81,6 +81,7 @@ export const EN: Record<string, string> = {
   'En Safari, toca el botón Compartir y luego «Añadir a pantalla de inicio». Se abrirá como una app y funcionará sin conexión.': 'In Safari, tap the Share button and then “Add to Home Screen”. It opens like an app and works offline.',
   'Se agotó el máximo de tokens mientras razonaba, antes de responder. Sube el máximo en Ajustes o desactiva Razonar y pulsa Regenerar.': 'The token limit ran out while reasoning, before the answer. Raise the limit in Settings or turn off Reasoning, then press Regenerate.',
   'Se agotó el máximo de tokens antes de responder. Súbelo en Ajustes y pulsa Regenerar.': 'The token limit ran out before the answer. Raise it in Settings and press Regenerate.',
+  'El navegador no ha podido reservar memoria para cargar {m} (sus pesos ocupan unos {s} en el navegador). Cierra otras pestañas y aplicaciones y vuelve a intentarlo. Si sigue igual, prueba LFM3 1.7B, que es mucho más ligero.': 'The browser could not reserve memory to load {m} (its weights take about {s} in the browser). Close other tabs and apps and try again. If it still fails, try LFM3 1.7B, which is much lighter.',
   'Descargando {m} · {a} de {b}': 'Downloading {m} · {a} of {b}',
   'Parar (Esc)': 'Stop (Esc)',
   'Enviar (Intro)': 'Send (Enter)',
