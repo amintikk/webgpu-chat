@@ -1168,8 +1168,11 @@ async function boot() {
     settings.theme = isDark() ? 'light' : 'dark';
     saveSettings();
     const d = document as Document & { startViewTransition?: (cb: () => void) => unknown };
-    if (d.startViewTransition && !matchMedia('(prefers-reduced-motion: reduce)').matches) d.startViewTransition(applyTheme);
-    else applyTheme();
+    if (d.startViewTransition && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      document.documentElement.classList.add('vt-theme');
+      const vt = d.startViewTransition(applyTheme) as { finished?: Promise<void> };
+      void vt.finished?.finally(() => document.documentElement.classList.remove('vt-theme'));
+    } else applyTheme();
   });
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme);
   $('btn-new').addEventListener('click', newConversation);

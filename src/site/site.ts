@@ -24,8 +24,11 @@ function applyTheme(theme: string): void {
 /** Cross-fades a visual change where the browser supports view transitions. */
 function smoothly(fn: () => void): void {
   const d = document as Document & { startViewTransition?: (cb: () => void) => unknown };
-  if (d.startViewTransition && !matchMedia('(prefers-reduced-motion: reduce)').matches) d.startViewTransition(fn);
-  else fn();
+  if (d.startViewTransition && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    document.documentElement.classList.add('vt-theme');
+    const vt = d.startViewTransition(fn) as { finished?: Promise<void> };
+    void vt.finished?.finally(() => document.documentElement.classList.remove('vt-theme'));
+  } else fn();
 }
 
 let theme = readTheme();

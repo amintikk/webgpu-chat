@@ -528,7 +528,6 @@ section.block h2 {
 .doc .table-wrap {
   border-radius: 20px;
   background: var(--glass-fill);
-  backdrop-filter: var(--blur);
   border: 1px solid var(--glass-edge);
   box-shadow: var(--glass-shine);
 }
