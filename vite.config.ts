@@ -1,4 +1,5 @@
-import { readFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { existsSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { defineConfig, type Plugin } from 'vite';
 
@@ -25,13 +26,35 @@ function partials(): Plugin {
   };
 }
 
+/**
+ * Files in public/ keep their names, and Cloudflare tells browsers to cache them for hours, so an updated
+ * icon or screenshot would not show. Every reference to one of them in the HTML gets `?v=<content hash>`.
+ */
+function versionPublic(): Plugin {
+  const pub = resolve(__dirname, 'public');
+  const cache = new Map<string, string>();
+  const hash = (file: string) => {
+    if (!cache.has(file)) cache.set(file, createHash('sha256').update(readFileSync(file)).digest('hex').slice(0, 10));
+    return cache.get(file)!;
+  };
+  return {
+    name: 'version-public',
+    transformIndexHtml(html) {
+      return html.replace(/(src|href)="(\/[^"?#]+\.(?:svg|png|ico|js|webmanifest|css))"/g, (m, attr: string, path: string) => {
+        const file = join(pub, path);
+        return existsSync(file) ? `${attr}="${path}?v=${hash(file)}"` : m;
+      });
+    },
+  };
+}
+
 const pages = [
   'index.html', 'app/index.html', 'aviso-legal/index.html', 'privacidad/index.html', 'terminos/index.html', 'licencias/index.html',
   'en/index.html', 'en/app/index.html', 'en/legal-notice/index.html', 'en/privacy/index.html', 'en/terms/index.html', 'en/licenses/index.html',
 ];
 
 export default defineConfig({
-  plugins: [partials()],
+  plugins: [partials(), versionPublic()],
   // cssTarget: modern engines, so the minifier keeps the standard backdrop-filter (Chrome ignores the -webkit- one).
   build: { target: 'es2022', cssTarget: ['chrome120', 'edge120', 'firefox121', 'safari17'], chunkSizeWarningLimit: 1200, rollupOptions: { input: pages.map((p) => resolve(__dirname, p)) } },
   worker: { format: 'es' },
