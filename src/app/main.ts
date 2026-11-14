@@ -383,6 +383,15 @@ function messageView(m: StoredMessage, index: number): HTMLElement {
   if (m.reasoning) view.append(reasoningBox(m.reasoning, false));
   view.append(body);
   if (m.error) view.append(h('div', { class: 'msg-error' }, icon('alert', 15), h('span', {}, m.error)));
+  else if (!m.content.trim() && m.stats?.stopped === 'length')
+    view.append(
+      h(
+        'div',
+        { class: 'msg-error' },
+        icon('info', 15),
+        h('span', {}, m.reasoning ? t('Se agotó el máximo de tokens mientras razonaba, antes de responder. Sube el máximo en Ajustes o desactiva Razonar y pulsa Regenerar.') : t('Se agotó el máximo de tokens antes de responder. Súbelo en Ajustes y pulsa Regenerar.')),
+      ),
+    );
   const isLast = current && index === current.messages.length - 1;
   view.append(
     h(

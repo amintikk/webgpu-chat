@@ -329,33 +329,65 @@ async function generate(id: number, messages: ChatMessage[], o: GenOptions) {
 
   const prefillEnd = { t: 0 };
   let lastPost = 0;
-  const streamer = new DeltaStreamer((ids) => {
+  // Thinking budget: small models can reason until the token limit and never answer. When the reasoning is
+  // still open after this many tokens, it is closed and the model answers with the tokens that are left.
+  const reserve = Math.min(512, Math.max(128, Math.round(o.maxTokens * 0.35)));
+  let budgetAt = o.reasoning && o.maxTokens > reserve * 1.5 ? o.maxTokens - reserve : 0;
+  const budget = new InterruptableStoppingCriteria();
+  const onIds = (ids: number[]) => {
     if (!prefillEnd.t) prefillEnd.t = performance.now();
+    if (budgetAt && ids.length >= budgetAt && !budget.interrupted) {
+      const open = splitReasoning(tokenizer.decode(ids, { skip_special_tokens: false }), m.think, o.reasoning, specials()).thinking;
+      if (open) budget.interrupt();
+      budgetAt = 0;
+    }
     const now = performance.now();
     if (now - lastPost < 40 && ids.length > 1) return; // ~25 updates/s is plenty
     lastPost = now;
     const text = tokenizer.decode(ids, { skip_special_tokens: false });
     const r = splitReasoning(text, m.think, o.reasoning, specials());
     post({ type: 'delta', id, content: r.content, reasoning: r.reasoning, thinking: r.thinking, tokens: ids.length });
-  });
-
-  const input_ids = new Tensor('int64', BigInt64Array.from(full.map(BigInt)), [1, full.length]);
-  const criteria = new StoppingCriteriaList();
-  criteria.push(stopper);
-  const out = await model.generate({
-    input_ids,
-    attention_mask: new Tensor('int64', new BigInt64Array(full.length).fill(1n), [1, full.length]),
-    past_key_values: base ? copyCache(base.cache) : undefined,
-    max_new_tokens: o.maxTokens,
+  };
+  const sampling = {
     do_sample: o.temperature > 0,
     temperature: Math.max(o.temperature, 1e-3),
     top_p: o.topP,
     top_k: o.topK,
     repetition_penalty: o.repetitionPenalty,
-    streamer,
-    stopping_criteria: criteria,
     return_dict_in_generate: true,
+  };
+  const ids64 = (ids: number[]) => ({
+    input_ids: new Tensor('int64', BigInt64Array.from(ids.map(BigInt)), [1, ids.length]),
+    attention_mask: new Tensor('int64', new BigInt64Array(ids.length).fill(1n), [1, ids.length]),
   });
+
+  const criteria = new StoppingCriteriaList();
+  criteria.push(stopper);
+  criteria.push(budget);
+  let out = await model.generate({
+    ...ids64(full),
+    ...sampling,
+    past_key_values: base ? copyCache(base.cache) : undefined,
+    max_new_tokens: o.maxTokens,
+    streamer: new DeltaStreamer(onIds),
+    stopping_criteria: criteria,
+  });
+  if (budget.interrupted && !stopper.interrupted) {
+    // Close the reasoning and let the model answer, continuing from the cache it just built.
+    const thought: number[] = Array.from(out.sequences.data as ArrayLike<bigint>, Number).slice(full.length);
+    const close: number[] = Array.from(tokenizer.encode(`\n${m.think.close}\n\n`, { add_special_tokens: false }) as ArrayLike<number>, Number);
+    const head = thought.concat(close);
+    const rest = new StoppingCriteriaList();
+    rest.push(stopper);
+    out = await model.generate({
+      ...ids64(full.concat(head)),
+      ...sampling,
+      past_key_values: out.past_key_values,
+      max_new_tokens: Math.max(64, o.maxTokens - head.length),
+      streamer: new DeltaStreamer((ids) => onIds(head.concat(ids))),
+      stopping_criteria: rest,
+    });
+  }
   const end = performance.now();
   const seq: number[] = Array.from(out.sequences.data as ArrayLike<bigint>, Number);
   const gen = seq.slice(full.length);

@@ -49,5 +49,17 @@ await turn('turn 3', chat);
 globalThis.onmessage({ data: { type: 'reset' } }); // posts no reply
 await turn('new conversation', [{ role: 'user', content: 'Di "hola".' }]);
 await turn('reasoning on', [{ role: 'user', content: '¿Cuánto es 3 × 7?' }], { ...opts, reasoning: true, maxTokens: 40 });
+// Thinking budget: with 200 tokens the reasoning is closed after 72 and the model must still answer.
+const budget = await turn('thinking budget', [{ role: 'user', content: 'Explícame qué es WebGPU en tres frases' }], { ...opts, reasoning: true, maxTokens: 200 });
+if (!budget?.content.trim() || !budget.reasoning) {
+  ok = false;
+  console.log('thinking budget: NO ANSWER', JSON.stringify(budget?.reasoning?.slice(-80)));
+} else console.log('thinking budget: reasoning', budget.reasoning.length, 'chars, then answer');
+// The conversation continues normally after a budget-closed answer (cache reuse).
+await turn('after budget', [
+  { role: 'user', content: 'Explícame qué es WebGPU en tres frases' },
+  { role: 'assistant', content: budget?.content ?? '', reasoning: budget?.reasoning },
+  { role: 'user', content: 'Gracias' },
+]);
 console.log(ok ? 'ALL OK' : 'SOME TURNS FAILED');
 process.exit(ok ? 0 : 1);
