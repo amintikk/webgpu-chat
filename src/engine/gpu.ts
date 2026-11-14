@@ -68,7 +68,9 @@ export function fit(m: ModelInfo, g: GpuReport): Fit {
   if (!g.f16) return { ok: false, why: 'no-f16' };
   const limit = Math.min(g.maxBufferSize, g.maxStorageBufferBindingSize);
   if (limit < m.largestBuffer) return { ok: false, why: 'buffer' };
-  if (m.tier === 'max' && g.mobile) return { ok: false, why: 'mobile' };
+  // Phones: only the light model. Qwen3.5 4B closes the browser even on a 12 GB flagship (tested on a recent
+  // Snapdragon): while loading, the weights sit in memory and on the GPU at the same time.
+  if (m.tier !== 'light' && g.mobile) return { ok: false, why: 'mobile' };
   if (g.deviceMemory && g.deviceMemory < MIN_MEMORY[m.tier]) return { ok: false, why: 'memory' };
   if (g.software) return { ok: true, warn: 'software' };
   if (m.tier === 'max') return { ok: true, warn: 'memory-unknown' };

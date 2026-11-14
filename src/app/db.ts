@@ -10,6 +10,8 @@ export interface StoredMessage {
   /** The answer was cut short (stopped by the user or by the token limit). */
   partial?: boolean;
   error?: string;
+  /** Files attached to a user message, as text (see attach.ts). */
+  files?: { name: string; size: number; text: string }[];
 }
 
 export interface Conversation {

@@ -24,6 +24,7 @@ export function fmtNum(n: number, digits = 0): string {
 
 export function fmtBytes(b: number): string {
   if (!Number.isFinite(b) || b <= 0) return '0 MB';
+  if (b < 1e6) return `${Math.max(1, Math.round(b / 1e3)).toLocaleString(locale)} KB`;
   return b >= 1e9 ? `${(b / 1e9).toLocaleString(locale, { maximumFractionDigits: 2 })} GB` : `${(b / 1e6).toLocaleString(locale, { maximumFractionDigits: b >= 1e8 ? 0 : 1 })} MB`;
 }
 

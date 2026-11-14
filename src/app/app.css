@@ -2004,3 +2004,89 @@ dialog::backdrop {
     font-size: 13px;
   }
 }
+
+/* Attachments: chips above the text in the composer, and above the bubble in sent messages. */
+.attachments {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px 12px 0;
+}
+.msg-files {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  max-width: 85%;
+  margin-bottom: 6px;
+}
+.file-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  max-width: 260px;
+  min-width: 0;
+  padding: 8px 10px 8px 11px;
+  border-radius: 14px;
+  background: var(--glass-fill);
+  border: 1px solid var(--glass-edge);
+  color: var(--text);
+  animation: chip-in 0.35s var(--spring);
+}
+@keyframes chip-in {
+  from {
+    transform: scale(0.92);
+  }
+}
+.file-chip > svg {
+  flex: none;
+  color: var(--blue);
+}
+.file-meta {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.25;
+}
+.file-meta strong {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 13px;
+  font-weight: 560;
+}
+.file-meta span {
+  color: var(--muted);
+  font-size: 11.5px;
+  white-space: nowrap;
+}
+.file-x {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  margin-left: 2px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+.file-x:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+.attach-btn {
+  width: 36px;
+  height: 36px;
+  color: var(--muted);
+}
+.attach-btn:hover {
+  color: var(--text);
+}
+/* Dropping files anywhere on the chat highlights the composer. */
+.shell.dropping .composer {
+  outline: 2px dashed color-mix(in oklab, var(--blue) 70%, transparent);
+  outline-offset: 4px;
+}

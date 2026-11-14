@@ -29,6 +29,9 @@ La selección de modelos, las fichas (qué hacen bien, límites, equipo) y las l
 - Panel de ajustes: prompt de sistema, temperatura, top-p, máximo de tokens, razonamiento sí/no y uso del contexto. Si la conversación no cabe, se omiten los mensajes más antiguos.
 - Descarga con progreso real (bytes) y gestión de modelos guardados (tamaño en caché, borrar, limpiar revisiones antiguas).
 - Tema claro y oscuro, español e inglés, barra lateral como cajón en móvil.
+- Adjuntar archivos (clip, arrastrar o pegar): PDF (texto extraído con pdf.js, cargado solo al adjuntar uno) y archivos de texto o código, hasta 5 por mensaje. Se leen en el navegador y se añaden al mensaje como texto; si no caben en el contexto del modelo, la app lo dice antes de enviar (`src/app/attach.ts`).
+- Instalable como app (botón en la barra superior cuando el navegador lo permite; en iPhone/iPad explica cómo añadirla desde Safari).
+- En móviles solo se ofrece el modelo ligero: Qwen3.5 4B cerraba el navegador al cargarse incluso en un móvil con 12 GB de RAM. Si una carga no termina (la pestaña se cierra por falta de memoria), al volver no se repite sola y la app explica qué ha pasado.
 - Sin conexión: tras la primera visita y la descarga del modelo, la web y el chat funcionan sin internet. Un *service worker* generado en el build (`dist/sw.js`, plugin `offline` de `vite.config.ts`) guarda las páginas, el código y el runtime WebAssembly; los modelos quedan en la caché de Transformers.js. El worker fija también las peticiones de Transformers.js a la rama `main` (comprobación del tokenizador) a la revisión del modelo y las sirve desde la caché.
 
 ## Cómo funciona
@@ -74,5 +77,5 @@ Cabecera y pie compartidos en `src/site/partials/`; textos de la app con `t('…
 
 Código bajo licencia [MIT](LICENSE). Los modelos mantienen sus licencias (LFM Open License v1.0 para
 LFM3; Apache 2.0 para Qwen3.5 y Gemma 4). Transformers.js (Apache 2.0), ONNX Runtime Web (MIT),
-highlight.js (BSD-3), Inter (OFL 1.1) y la geometría de los iconos de Lucide (ISC) mantienen las suyas;
+highlight.js (BSD-3), pdf.js (Apache 2.0), Inter (OFL 1.1) y la geometría de los iconos de Lucide (ISC) mantienen las suyas;
 detalle en [/licencias/](https://llm.aminox.dev/licencias/).

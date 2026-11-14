@@ -332,7 +332,7 @@ export const PAGES = [
       sections: [
         { h: 'Qué hace bien', ul: ['Explicaciones, redacción y programación de complejidad media.', 'Con el razonamiento activado, resuelve mejor problemas de matemáticas y lógica.', 'Buen nivel en español e inglés.'], p: 'En la <a href="/#ejemplos">portada</a> tienes diez respuestas reales suyas, sin editar: un haiku, la relatividad para niños, un plan de viaje, código en Python, una tabla y más.' },
         { h: 'Sus límites', ul: ['Más lento que LFM3 y con una descarga de casi 3 GB.', 'El razonamiento alarga mucho las respuestas: puede tardar minutos en equipos modestos.', 'Puede equivocarse en datos concretos; compruébalos.', 'Aquí solo trabaja con texto, aunque el modelo original también admite imágenes.'] },
-        { h: 'Qué equipo necesitas', p: 'Un navegador con WebGPU y shader-f16, unos 4 GB de memoria gráfica libre y 8 GB de RAM o más.' },
+        { h: 'Qué equipo necesitas', p: 'Un navegador con WebGPU y shader-f16, unos 4 GB de memoria gráfica libre y 8 GB de RAM o más. En móviles no está disponible: aun con 12 GB de RAM, el navegador se cierra al cargarlo.' },
         { h: 'Licencia', p: 'Apache 2.0 de Alibaba Cloud (Qwen): uso libre, también comercial, conservando el aviso de licencia. Los archivos ONNX los publica onnx-community en Hugging Face y la web los usa en una versión fijada.' },
       ],
       cta: { text: 'Chatear con Qwen3.5 4B', href: '/app/?model=qwen3.5-4b' },
@@ -353,7 +353,7 @@ export const PAGES = [
       sections: [
         { h: 'What it does well', ul: ['Explanations, writing and medium-complexity coding.', 'With reasoning on, it solves maths and logic problems better.', 'Good level in English and Spanish.'], p: 'On the <a href="/en/#ejemplos">home page</a> you will find ten of its real, unedited answers: a haiku, relativity for kids, a travel plan, Python code, a table and more.' },
         { h: 'Its limits', ul: ['Slower than LFM3, with a download of almost 3 GB.', 'Reasoning makes answers much longer: it can take minutes on modest machines.', 'It can get specific facts wrong; check them.', 'Text only here, although the original model also accepts images.'] },
-        { h: 'Hardware you need', p: 'A browser with WebGPU and shader-f16, about 4 GB of free graphics memory and 8 GB of RAM or more.' },
+        { h: 'Hardware you need', p: 'A browser with WebGPU and shader-f16, about 4 GB of free graphics memory and 8 GB of RAM or more. Not available on phones: even with 12 GB of RAM, the browser closes while loading it.' },
         { h: 'License', p: 'Apache 2.0 by Alibaba Cloud (Qwen): free use, including commercial, keeping the licence notice. The ONNX files are published by onnx-community on Hugging Face and the site uses them at a pinned version.' },
       ],
       cta: { text: 'Chat with Qwen3.5 4B', href: '/en/app/?model=qwen3.5-4b' },

@@ -49,6 +49,7 @@
           <div class="model-picker" id="model-picker"></div>
           <span class="offline-pill" id="offline" hidden></span>
           <div class="top-actions">
+            <button class="icon-btn" id="btn-install" type="button" aria-label="Instalar la app" title="Instalar la app" hidden><i data-icon="install" data-size="18"></i></button>
             <button class="icon-btn" id="btn-settings" type="button" aria-label="Ajustes" title="Ajustes" aria-controls="settings" aria-expanded="false"><i data-icon="sliders" data-size="18"></i></button>
           </div>
         </header>
@@ -56,8 +57,11 @@
         <footer class="composer-wrap">
           <div class="load-banner" id="load-banner" hidden></div>
           <form class="composer" id="composer">
+            <div class="attachments" id="attachments" hidden></div>
             <textarea id="input" rows="1" aria-label="Mensaje" placeholder="Escribe un mensaje…"></textarea>
             <div class="composer-bar">
+              <button class="icon-btn attach-btn" id="btn-attach" type="button" aria-label="Adjuntar archivo" title="Adjuntar PDF o texto"><i data-icon="paperclip" data-size="18"></i></button>
+              <input type="file" id="file-input" multiple hidden />
               <button class="chip" id="btn-reasoning" type="button" aria-pressed="false" title="El modelo piensa antes de responder"><i data-icon="brain" data-size="15"></i>Razonar</button>
               <span class="ctx-mini" id="ctx-mini"></span>
               <button class="send" id="btn-send" type="submit" aria-label="Enviar"></button>

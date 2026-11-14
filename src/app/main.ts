@@ -14,6 +14,7 @@ import { deleteConversation, listConversations, newId, saveConversation, titleFr
 import { card, tierLabel } from './modelcards.ts';
 import { level, score, wait, type Level, type Wait } from './score.ts';
 import { copyButton, renderMarkdown } from './render.ts';
+import { ACCEPT, readAttachment, withAttachments, type Attachment } from './attach.ts';
 
 // ---------------------------------------------------------------------------------------------
 // Settings (localStorage: preferences only; conversations are in IndexedDB)
@@ -92,6 +93,17 @@ const el = {
   panel: $('settings'),
   reasoningChip: $<HTMLButtonElement>('btn-reasoning'),
 };
+
+/** Files attached in the composer, waiting to be sent (read in attach.ts). */
+interface Pending {
+  id: number;
+  name: string;
+  size: number;
+  file?: Attachment; // set once read
+}
+let pending: Pending[] = [];
+let pendingSeq = 0;
+const MAX_FILES = 5;
 
 // ---------------------------------------------------------------------------------------------
 // Theme
@@ -360,8 +372,9 @@ function messageView(m: StoredMessage, index: number): HTMLElement {
     return h(
       'div',
       { class: 'msg user' },
-      h('div', { class: 'bubble' }, m.content),
-      h('div', { class: 'msg-tools' }, copyButton(() => m.content, t('Copiar'))),
+      m.files?.length ? h('div', { class: 'msg-files' }, ...m.files.map((f) => fileChip(f.name, `${fmtBytes(f.size)} · ${t('{n} caracteres', { n: fmtNum(f.text.length) })}`))) : null,
+      m.content ? h('div', { class: 'bubble' }, m.content) : null,
+      m.content ? h('div', { class: 'msg-tools' }, copyButton(() => m.content, t('Copiar'))) : null,
     );
   }
   const body = h('div', { class: 'md' });
@@ -634,7 +647,8 @@ function renderComposerState() {
   el.send.title = generating ? t('Parar (Esc)') : t('Enviar (Intro)');
   el.send.setAttribute('aria-label', el.send.title);
   el.send.classList.toggle('stop', generating);
-  el.send.disabled = !generating && (!ready || !el.input.value.trim());
+  const hasInput = !!el.input.value.trim() || readyFiles().length > 0;
+  el.send.disabled = !generating && (!ready || !hasInput || pending.some((p) => !p.file));
   el.input.disabled = !!gpu && !gpu.ok;
   el.input.placeholder = gpu && !gpu.ok ? t('WebGPU no disponible') : ready || generating ? t('Escribe un mensaje…') : loading ? t('Cargando el modelo…') : t('Descarga un modelo para empezar');
   const r = selected ? ms(selected).reasoning : false;
@@ -652,7 +666,7 @@ function toChat(msgs: StoredMessage[]): ChatMessage[] {
   if (settings.system.trim()) out.push({ role: 'system', content: settings.system.trim() });
   for (const m of msgs) {
     if (m.role === 'assistant' && !m.content && !m.reasoning) continue;
-    out.push(m.role === 'assistant' ? { role: 'assistant', content: m.content, reasoning: m.reasoning } : { role: 'user', content: m.content });
+    out.push(m.role === 'assistant' ? { role: 'assistant', content: m.content, reasoning: m.reasoning } : { role: 'user', content: withAttachments(m.content, m.files) });
   }
   return out;
 }
@@ -669,15 +683,94 @@ async function fitContext(m: ModelInfo, msgs: StoredMessage[], maxTokens: number
   }
 }
 
+// ---------------------------------------------------------------------------------------------
+// Attachments waiting in the composer
+
+
+const readyFiles = (): Attachment[] => pending.flatMap((p) => (p.file ? [p.file] : []));
+
+function addFiles(files: File[]) {
+  if (gpu && !gpu.ok) return;
+  for (const f of files) {
+    if (pending.length >= MAX_FILES) {
+      toast(t('Como mucho {n} archivos por mensaje.', { n: MAX_FILES }));
+      break;
+    }
+    const p: Pending = { id: ++pendingSeq, name: f.name, size: f.size };
+    pending.push(p);
+    readAttachment(f)
+      .then((a) => {
+        p.file = a;
+      })
+      .catch((e: unknown) => {
+        pending = pending.filter((x) => x !== p);
+        toast(e instanceof Error ? e.message : String(e));
+      })
+      .finally(() => {
+        renderAttachments();
+        renderComposerState();
+        void updateContext();
+      });
+  }
+  renderAttachments();
+  renderComposerState();
+  el.input.focus();
+}
+
+function fileChip(name: string, detail: string, onRemove?: () => void): HTMLElement {
+  return h(
+    'div',
+    { class: 'file-chip' },
+    icon('fileText', 16),
+    h('span', { class: 'file-meta' }, h('strong', {}, name), h('span', {}, detail)),
+    onRemove ? h('button', { type: 'button', class: 'file-x', 'aria-label': t('Quitar {f}', { f: name }), title: t('Quitar'), onclick: onRemove }, icon('x', 14)) : null,
+  );
+}
+
+function renderAttachments() {
+  const box = $('attachments');
+  box.hidden = pending.length === 0;
+  box.replaceChildren(
+    ...pending.map((p) =>
+      fileChip(p.name, p.file ? `${fmtBytes(p.size)} · ${t('{n} caracteres', { n: fmtNum(p.file.text.length) })}` : t('Leyendo…'), () => {
+        pending = pending.filter((x) => x !== p);
+        renderAttachments();
+        renderComposerState();
+        void updateContext();
+      }),
+    ),
+  );
+}
+
 async function send() {
   const text = el.input.value.trim();
-  if (!text || generating || !selected || engine.loaded !== selected.id) return;
+  const files = readyFiles();
+  if ((!text && !files.length) || pending.some((p) => !p.file) || generating || !selected || engine.loaded !== selected.id) return;
+  const msg: StoredMessage = files.length ? { role: 'user', content: text, files } : { role: 'user', content: text };
+  if (files.length) {
+    // The new message alone (with its files) must leave room for the answer.
+    const m = selected;
+    const n = await engine.count(toChat([msg]), ms(m).reasoning);
+    if (n + ms(m).maxTokens > m.context) {
+      showError(
+        t('Lo adjunto es demasiado largo para {m}: ocupa unos {n} tokens y el modelo admite {c} en total, contando los {r} reservados para la respuesta. Adjunta un fragmento más corto o reduce el máximo de tokens en Ajustes.', {
+          m: m.name,
+          n: fmtNum(n),
+          c: fmtNum(m.context),
+          r: fmtNum(ms(m).maxTokens),
+        }),
+      );
+      return;
+    }
+  }
   el.input.value = '';
+  pending = [];
+  renderAttachments();
   autosize();
   if (!current) {
-    current = { id: newId(), title: titleFrom(text), createdAt: Date.now(), updatedAt: Date.now(), model: selected.id, messages: [] };
+    current = { id: newId(), title: titleFrom(text || files[0]!.name), createdAt: Date.now(), updatedAt: Date.now(), model: selected.id, messages: [] };
   }
-  current.messages.push({ role: 'user', content: text });
+  current.messages.push(msg);
   await persist(current);
   renderThread();
   await respond();
@@ -789,6 +882,45 @@ el.input.addEventListener('keydown', (e) => {
     void send();
   }
 });
+// Attachments: the paperclip, dropping files on the chat, or pasting them.
+const fileInput = $<HTMLInputElement>('file-input');
+fileInput.accept = ACCEPT;
+$('btn-attach').addEventListener('click', () => fileInput.click());
+fileInput.addEventListener('change', () => {
+  addFiles([...(fileInput.files ?? [])]);
+  fileInput.value = '';
+});
+el.input.addEventListener('paste', (e) => {
+  const files = [...(e.clipboardData?.files ?? [])];
+  if (files.length) {
+    e.preventDefault();
+    addFiles(files);
+  }
+});
+let dragDepth = 0;
+const shellEl = $('shell');
+shellEl.addEventListener('dragenter', (e) => {
+  if (!e.dataTransfer?.types.includes('Files')) return;
+  dragDepth++;
+  shellEl.classList.add('dropping');
+});
+shellEl.addEventListener('dragleave', () => {
+  if (--dragDepth <= 0) {
+    dragDepth = 0;
+    shellEl.classList.remove('dropping');
+  }
+});
+shellEl.addEventListener('dragover', (e) => {
+  if (e.dataTransfer?.types.includes('Files')) e.preventDefault();
+});
+shellEl.addEventListener('drop', (e) => {
+  if (!e.dataTransfer?.files.length) return;
+  e.preventDefault();
+  dragDepth = 0;
+  shellEl.classList.remove('dropping');
+  addFiles([...e.dataTransfer.files]);
+});
+
 $('composer').addEventListener('submit', (e) => {
   e.preventDefault();
   if (generating) engine.stop();
@@ -826,7 +958,8 @@ async function updateContext() {
   }
   const msgs: StoredMessage[] = [...(current?.messages ?? [])];
   const draft = el.input.value.trim();
-  if (draft) msgs.push({ role: 'user', content: draft });
+  const files = readyFiles();
+  if (draft || files.length) msgs.push({ role: 'user', content: draft, files });
   ctxTokens = await engine.count(toChat(msgs), ms(selected).reasoning);
   renderContext();
 }
@@ -1299,6 +1432,50 @@ void boot();
 (window as unknown as Record<string, unknown>).__chat = { engine, lang, localPath, setMood };
 
 // Offline support (production build only): the service worker keeps the site available with no connection.
+// Install as an app. Chrome and Edge (desktop and Android) offer it through `beforeinstallprompt`; Safari on
+// iPhone and iPad has no such event, so the button explains how to add it from the share menu.
+type InstallEvent = Event & { prompt(): Promise<void>; userChoice: Promise<{ outcome: string }> };
+let installEvt: InstallEvent | null = null;
+const installBtn = $<HTMLButtonElement>('btn-install');
+const standalone = () => matchMedia('(display-mode: standalone)').matches || (navigator as Navigator & { standalone?: boolean }).standalone === true;
+const iosSafari = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const renderInstall = () => {
+  installBtn.hidden = standalone() || !(installEvt || iosSafari);
+};
+addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  installEvt = e as InstallEvent;
+  renderInstall();
+});
+addEventListener('appinstalled', () => {
+  installEvt = null;
+  renderInstall();
+  toast(t('App instalada. Ábrela desde tu pantalla de inicio o el menú de aplicaciones.'));
+});
+installBtn.addEventListener('click', async () => {
+  if (installEvt) {
+    const evt = installEvt;
+    installEvt = null;
+    await evt.prompt();
+    await evt.userChoice.catch(() => null);
+    renderInstall();
+    return;
+  }
+  const d = dialog('dlg-confirm');
+  const ok = h('button', { type: 'button', class: 'btn primary', onclick: () => d.close() }, t('Entendido'));
+  d.replaceChildren(
+    h(
+      'div',
+      { class: 'dlg-body' },
+      h('h2', {}, t('Instalar la app')),
+      h('p', {}, t('En Safari, toca el botón Compartir y luego «Añadir a pantalla de inicio». Se abrirá como una app y funcionará sin conexión.')),
+      h('div', { class: 'dlg-actions' }, ok),
+    ),
+  );
+  d.showModal();
+});
+renderInstall();
+
 if (import.meta.env.PROD && 'serviceWorker' in navigator) {
   addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
 }

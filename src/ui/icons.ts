@@ -1,6 +1,9 @@
 /** Inline SVG icons (Lucide geometry, ISC licence; 24px grid, stroked with currentColor). */
 const PATHS = {
   chevronDown: 'm6 9 6 6 6-6',
+  paperclip: 'm16 6-8.414 8.586a2 2 0 0 0 2.829 2.829l8.414-8.586a4 4 0 1 0-5.657-5.657l-8.379 8.551a6 6 0 1 0 8.485 8.485l8.379-8.551',
+  fileText: 'M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7zM14 2v4a2 2 0 0 0 2 2h4M10 9H8M16 13H8M16 17H8',
+  install: 'M12 15V3M7 10l5 5 5-5M5 21h14',
   chevronRight: 'm9 18 6-6-6-6',
   chevronLeft: 'm15 18-6-6 6-6',
   pen: 'M12 20h9M16.38 3.62a1 1 0 0 1 3 3L7.37 18.64a2 2 0 0 1-.86.5l-2.87.84a.5.5 0 0 1-.62-.62l.84-2.87a2 2 0 0 1 .5-.86z',
