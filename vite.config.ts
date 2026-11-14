@@ -75,7 +75,8 @@ function offline(): Plugin {
 const CACHE = 'webgpu-chat-site-${version}';
 const FILES = ${JSON.stringify(urls)};
 self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(FILES)).then(() => self.skipWaiting()));
+  // cache: 'reload' skips the browser's HTTP cache, which may still hold older copies of unhashed files.
+  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(FILES.map((u) => new Request(u, { cache: 'reload' })))).then(() => self.skipWaiting()));
 });
 self.addEventListener('activate', (e) => {
   e.waitUntil(
@@ -99,8 +100,28 @@ self.addEventListener('fetch', (e) => {
     );
     return;
   }
-  // Scripts, styles, fonts, icons and the runtime: cache first (hashed or versioned names).
-  e.respondWith(caches.match(req, { ignoreSearch: url.pathname.startsWith('/ort/') }).then((r) => r || caches.match(url.pathname).then((r2) => r2 || fetch(req))));
+  // Hashed build files (/assets/) never change: cache first. Everything else (icons, screenshots, the runtime,
+  // versioned with ?v=): exact URL from the cache, else the network (and keep a copy), and only when offline
+  // fall back to whatever copy of that path is stored.
+  if (url.pathname.startsWith('/assets/')) {
+    e.respondWith(caches.match(req).then((r) => r || fetch(req)));
+    return;
+  }
+  e.respondWith(
+    caches.match(req).then(
+      (hit) =>
+        hit ||
+        fetch(req)
+          .then((res) => {
+            if (res.ok) {
+              const copy = res.clone();
+              caches.open(CACHE).then((c) => c.put(req, copy));
+            }
+            return res;
+          })
+          .catch(() => caches.match(url.pathname, { ignoreSearch: true }).then((r) => r || Response.error())),
+    ),
+  );
 });
 `;
       writeFileSync(join(dist, 'sw.js'), sw);
