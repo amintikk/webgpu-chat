@@ -842,9 +842,12 @@ async function respond() {
 
   let pending: { content: string; reasoning: string; thinking: boolean } | null = null;
   let raf = 0;
+  let renderMs = 0;
+  let paintedContent: string | null = null;
   const paint = () => {
     raf = 0;
     if (!pending) return;
+    const paintStart = performance.now();
     const p = pending;
     pending = null;
     if (p.reasoning) {
@@ -860,9 +863,13 @@ async function respond() {
         rbox.el.querySelector('summary span')!.textContent = t('Razonamiento ({d})', { d: fmtDuration(rbox.end - rbox.start) });
       }
     }
-    body.replaceChildren(renderMarkdown(p.content));
-    if (!p.thinking) body.append(h('span', { class: 'cursor' }));
+    if (p.content !== paintedContent) {
+      body.replaceChildren(renderMarkdown(p.content));
+      if (!p.thinking) body.append(h('span', { class: 'cursor' }));
+      paintedContent = p.content;
+    }
     scrollToEnd();
+    renderMs += performance.now() - paintStart;
   };
 
   const msg: StoredMessage = { role: 'assistant', content: '', model: m.id };
@@ -878,6 +885,7 @@ async function respond() {
     msg.content = r.content;
     if (r.reasoning) msg.reasoning = r.reasoning;
     msg.stats = r.stats;
+    dlog(`CHAT ${m.id}: ${JSON.stringify({ ...r.stats, renderMs, temperature: opts.temperature, topP: opts.topP, reasoning: opts.reasoning })}`);
     msg.partial = r.stats.stopped !== 'eos';
   } catch (e) {
     msg.error = t('Error al generar: {e}', { e: e instanceof Error ? e.message : String(e) });
@@ -1378,12 +1386,15 @@ function benchBox(m: ModelInfo): HTMLElement {
         gpu: gpu && { vendor: gpu.vendor, architecture: gpu.architecture, description: gpu.description, maxBufferSize: gpu.maxBufferSize, software: gpu.software },
         userAgent: navigator.userAgent,
         downloadBytes: downloadBytes(m),
-        weightBytesOnGpu: weights,
+        weightFileBytes: weights,
+        gpuMemoryMeasured: false,
+        benchmarkKind: 'synthetic-greedy-second-run',
         score: sc,
         ...r,
         date: new Date().toISOString(),
       };
       details.replaceChildren(
+        h('p', { class: 'hint' }, t('La nota mide rapidez, no el porcentaje de potencia aprovechada. Prueba sintética sin muestreo; el chat puede rendir distinto.')),
         h('ul', { class: 'bench-facts' },
           h('li', {}, icon('zap', 15), h('span', {}, t('{v} palabras por segundo, aproximadamente', { v: fmtNum(r.tokensPerSecond * 0.7, 0) }))),
           h('li', {}, icon('message', 15), h('span', {}, t(WAIT_TEXT[wt]))),
@@ -1399,7 +1410,7 @@ function benchBox(m: ModelInfo): HTMLElement {
             {},
             h('div', {}, h('dt', {}, t('Generación')), h('dd', {}, t('{v} tokens/s', { v: fmtNum(r.tokensPerSecond, 1) }))),
             h('div', {}, h('dt', {}, t('Lectura del prompt')), h('dd', {}, t('{v} tokens/s ({n} tokens en {d})', { v: fmtNum(r.prefillTokensPerSecond, 0), n: r.promptTokens, d: fmtDuration(r.prefillMs) }))),
-            h('div', {}, h('dt', {}, t('Pesos en la GPU')), h('dd', {}, fmtBytes(weights))),
+            h('div', {}, h('dt', {}, t('Tamaño de los archivos de pesos')), h('dd', {}, fmtBytes(weights))),
           ),
           h('div', { class: 'bench-copy' }, copyButton(() => JSON.stringify(report, null, 2), t('Copiar resultado (JSON)')), h('span', { class: 'hint' }, t('Copiar resultado (JSON)'))),
         ),

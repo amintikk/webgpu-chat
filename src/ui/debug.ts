@@ -102,9 +102,9 @@ export function clearDebug(): void {
 /** Heap numbers (Chromium only: performance.memory), as a short text. */
 export function memoryText(): string {
   const pm = (performance as Performance & { memory?: { usedJSHeapSize: number; totalJSHeapSize: number; jsHeapSizeLimit: number } }).memory;
-  if (!pm) return 'heap: no disponible en este navegador';
+  if (!pm) return 'heap JS de la página: no disponible';
   const mb = (n: number) => `${Math.round(n / 1048576)} MB`;
-  return `heap usado ${mb(pm.usedJSHeapSize)} · reservado ${mb(pm.totalJSHeapSize)} · límite ${mb(pm.jsHeapSizeLimit)}`;
+  return `heap JS de la página (excluye worker/runtime/GPU) usado ${mb(pm.usedJSHeapSize)} · reservado ${mb(pm.totalJSHeapSize)} · límite ${mb(pm.jsHeapSizeLimit)}`;
 }
 
 /** Samples the heap every second while a model loads, so the record shows where memory climbs. */
@@ -143,6 +143,7 @@ export async function reportText(extra: string[] = []): Promise<string> {
   out.push(`RAM según el navegador (deviceMemory, que suele topar en 8 GB): ${nav.deviceMemory ?? 'n/d'} GB`);
   out.push(`núcleos: ${navigator.hardwareConcurrency}`);
   out.push(`${memoryText()}`);
+  out.push('Memoria total del motor, VRAM y porcentaje de uso de GPU: no medidos. Los tiempos son de pared, no tiempos exclusivos de GPU.');
   try {
     const est = await navigator.storage?.estimate?.();
     if (est) out.push(`almacenamiento: usado ${Math.round((est.usage ?? 0) / 1e6)} MB de cuota ${Math.round((est.quota ?? 0) / 1e6)} MB`);

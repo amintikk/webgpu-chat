@@ -41,6 +41,23 @@ La selección de modelos, las fichas (qué hacen bien, límites, equipo) y las l
 - **Detección** (`src/engine/gpu.ts`): WebGPU, `shader-f16`, `maxBufferSize`/`maxStorageBufferBindingSize`, memoria del equipo y móvil. Sin WebGPU o sin f16 la app explica por qué y qué hacer; no hay modo WASM.
 - **Red**: la CSP solo permite conectarse a la propia web, `huggingface.co` y `us.aws.cdn.hf.co` (CDN al que redirige Hugging Face, comprobado desde varios países). El runtime WebAssembly de ONNX Runtime se sirve desde `/ort/`.
 
+## Diagnóstico de rendimiento
+
+Activa el modo depuración antes de cargar el modelo y copia su informe después de conversar.
+El registro incluye la identidad del dispositivo de ONNX Runtime cuando el navegador la expone,
+los tiempos de cada respuesta, tokens reutilizados, preparación de plantilla, instantánea del contexto,
+streaming de texto y renderizado. No incluye los mensajes ni se envía a ningún servidor.
+Los tiempos son de pared: la instantánea incluye ejecución del modelo; streaming y renderizado
+son costes parciales, no una descomposición completa de CPU/GPU. `prefillMs` mide hasta el primer token
+desde después de preparar la plantilla; `totalMs` incluye también esa preparación.
+
+La carga de pesos y sesiones incluye descarga/lectura de caché. El heap registrado corresponde solo
+al JavaScript de la página; no mide memoria total, VRAM ni ocupación GPU. El tamaño de los archivos
+de pesos tampoco es una medición de memoria GPU. La nota del benchmark expresa rapidez, no utilización
+del hardware: usa la segunda ejecución de 128 tokens sin muestreo ni streaming de texto. Contrástala con
+las líneas `CHAT` del informe, incluidos segundos turnos con caché. Hace falta un perfil del cliente
+para atribuir un cuello de botella a CPU, GPU o transferencias; estas métricas no lo certifican.
+
 ## Gemma 4 12B: exportación propia
 
 No había un ONNX fiable de `google/gemma-4-12B-it`, así que `tools/gemma4/export.py` construye el grafo

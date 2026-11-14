@@ -230,7 +230,7 @@ async function load(id: string, dtypeOverride?: string, device = 'webgpu') {
   tokenizer = await AutoTokenizer.from_pretrained(m.repo, opts);
   const cls = CLASSES[m.cls];
   const dtype = dtypeOverride ? (typeof m.dtype === 'string' ? dtypeOverride : Object.fromEntries(Object.keys(m.dtype).map((k) => [k, dtypeOverride]))) : m.dtype;
-  dbg('descargas listas; creando sesiones ONNX (pesos a memoria y GPU)');
+  dbg('carga del modelo: lectura/descarga de pesos y creación de sesiones ONNX');
   const tSes = performance.now();
   try {
     model = await cls.from_pretrained(m.repo, { ...opts, dtype, device });
@@ -238,7 +238,14 @@ async function load(id: string, dtypeOverride?: string, device = 'webgpu') {
     dbg(`creación de sesiones falló: ${errText(e)}`);
     throw e;
   }
-  dbg(`sesiones creadas en ${Math.round(performance.now() - tSes)} ms`);
+  dbg(`pesos y sesiones listos en ${Math.round(performance.now() - tSes)} ms (incluye E/S; no es tiempo exclusivo de GPU)`);
+  if (device === 'webgpu') {
+    try {
+      const gpuDevice = await onnx.webgpu.device;
+      const a = gpuDevice?.adapterInfo;
+      dbg(`GPU del motor: ${JSON.stringify(a ? { vendor: a.vendor, architecture: a.architecture, device: a.device, description: a.description } : 'identidad no disponible')}; memoria GPU y ocupación: no medidas`);
+    } catch { dbg('GPU del motor: identidad no disponible'); }
+  }
   // Transformers.js 4.3 (Qwen3-VL family): continuing from a cache sets `pixel_values = null`, and a
   // multi-token continuation then treats null as an image and calls the vision encoder, which a text-only
   // load does not have. Drop the null so the turn is processed as text.
@@ -323,6 +330,7 @@ async function generate(id: number, messages: ChatMessage[], o: GenOptions) {
   if (!model || !info) throw new Error('No model loaded');
   const m = info;
   stopper.reset();
+  const start = performance.now();
   const full = template(messages, true, o.reasoning);
   const hist = template(messages, false, o.reasoning);
   const boundary = isPrefix(hist, full) && hist.length < full.length ? hist.length : 0;
@@ -333,6 +341,8 @@ async function generate(id: number, messages: ChatMessage[], o: GenOptions) {
   let base: CacheState | null = candidates[0] ?? null;
   const t0 = performance.now();
   const cached = base?.tokens.length ?? 0;
+  const templateMs = t0 - start;
+  const snapshotStart = performance.now();
 
   // Snapshot at the end of the history (before the generation prompt), reused by the next turn
   // even though chat templates rewrite earlier answers (e.g. dropping their reasoning).
@@ -349,6 +359,9 @@ async function generate(id: number, messages: ChatMessage[], o: GenOptions) {
   live = null;
   snap = newSnap;
 
+  const snapshotMs = performance.now() - snapshotStart;
+  let streamMs = 0;
+  let streamUpdates = 0;
   const prefillEnd = { t: 0 };
   let lastPost = 0;
   // Thinking budget: small models can reason until the token limit and never answer. When the reasoning is
@@ -366,9 +379,12 @@ async function generate(id: number, messages: ChatMessage[], o: GenOptions) {
     const now = performance.now();
     if (now - lastPost < 40 && ids.length > 1) return; // ~25 updates/s is plenty
     lastPost = now;
+    const streamStart = performance.now();
     const text = tokenizer.decode(ids, { skip_special_tokens: false });
     const r = splitReasoning(text, m.think, o.reasoning, specials());
     post({ type: 'delta', id, content: r.content, reasoning: r.reasoning, thinking: r.thinking, tokens: ids.length });
+    streamMs += performance.now() - streamStart;
+    streamUpdates++;
   };
   const sampling = {
     do_sample: o.temperature > 0,
@@ -426,6 +442,8 @@ async function generate(id: number, messages: ChatMessage[], o: GenOptions) {
     content: r.content,
     reasoning: r.reasoning,
     stats: {
+      templateMs, snapshotMs, streamMs, streamUpdates,
+      totalMs: end - start,
       promptTokens: full.length,
       cachedTokens: cached,
       newTokens: gen.length,
@@ -466,6 +484,7 @@ async function bench(id: number) {
     const decodeMs = end - (first || end);
     result = { promptTokens: ids.length, newTokens: n, prefillMs, decodeMs, tokensPerSecond: ((n - 1) * 1000) / decodeMs, prefillTokensPerSecond: (ids.length * 1000) / prefillMs, runs: run + 1 };
   }
+  dbg(`benchmark sintético (segunda ejecución, sin muestreo ni streaming de texto): ${JSON.stringify(result)}`);
   post({ type: 'bench', id, result });
 }
 

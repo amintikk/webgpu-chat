@@ -17,6 +17,12 @@ export interface GenOptions {
 }
 
 export interface GenStats {
+  /** CPU wall times; snapshotMs includes model execution, not exclusive GPU time. */
+  templateMs?: number;
+  snapshotMs?: number;
+  streamMs?: number;
+  streamUpdates?: number;
+  totalMs?: number;
   promptTokens: number;
   /** Prompt tokens served from the cache of earlier turns. */
   cachedTokens: number;
