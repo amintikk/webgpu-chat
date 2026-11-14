@@ -290,11 +290,22 @@ function emptyState(): HTMLElement {
       'div',
       { class: 'suggestions' },
       ...sugg.map((s) =>
-        h('button', { type: 'button', class: 'suggestion', 'data-glow': '', onclick: () => ((el.input.value = s), autosize(), el.input.focus(), updateContext()) }, s),
+        h('button', { type: 'button', class: 'suggestion', 'data-glow': '', onclick: () => pickSuggestion(s) }, s),
       ),
     ),
   );
   return box;
+}
+
+/** A suggestion fills the composer and leaves it ready to send (button enabled, context measured). */
+function pickSuggestion(text: string) {
+  el.input.value = text;
+  autosize();
+  renderComposerState();
+  el.input.focus();
+  el.input.setSelectionRange(text.length, text.length);
+  if (!generating && !loading) setMood('typing');
+  void updateContext();
 }
 
 function noWebGpu(g: GpuReport): HTMLElement {
