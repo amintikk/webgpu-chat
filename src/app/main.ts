@@ -77,7 +77,8 @@ let conversations: Conversation[] = [];
 let current: Conversation | null = null;
 let selected: ModelInfo | null = null;
 const cacheInfo = new Map<ModelId, CacheEntry>();
-let loading: { model: ModelId; loaded: number; total: number; stage: string } | null = null;
+/** fromCache: every file is already on disk, so the bar reads the cache rather than downloading. */
+let loading: { model: ModelId; loaded: number; total: number; stage: string; fromCache?: boolean } | null = null;
 let generating = false;
 let query = '';
 let ctxTokens = 0;
@@ -561,7 +562,8 @@ async function loadModel(id: ModelId) {
   } catch {
     /* best effort */
   }
-  loading = { model: id, loaded: 0, total: downloadBytes(m), stage: 'download' };
+  const cached = cacheInfo.get(id);
+  loading = { model: id, loaded: 0, total: downloadBytes(m), stage: 'download', fromCache: !!cached && isComplete(cached) };
   setAuroraProgress(0);
   setMood('loading');
   renderPicker();
@@ -667,7 +669,9 @@ function renderLoad() {
       ? t('Preparando {m} en la GPU…', { m: m.name })
       : loading.stage === 'compile' || pct >= 99.9
         ? t('Cargando {m} en la GPU…', { m: m.name })
-        : t('Descargando {m} · {a} de {b}', { m: m.name, a: fmtBytes(loading.loaded), b: fmtBytes(loading.total) });
+        : loading.fromCache
+          ? t('Leyendo {m} del disco · {a} de {b}', { m: m.name, a: fmtBytes(loading.loaded), b: fmtBytes(loading.total) })
+          : t('Descargando {m} · {a} de {b}', { m: m.name, a: fmtBytes(loading.loaded), b: fmtBytes(loading.total) });
   box.hidden = false;
   box.replaceChildren(
     h('div', { class: 'load-row' }, h('span', {}, label), h('span', { class: 'load-pct' }, loading.stage === 'download' && pct < 99.9 ? `${fmtNum(pct, 0)}\u00a0%` : '')),

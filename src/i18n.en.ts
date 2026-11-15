@@ -96,6 +96,7 @@ export const EN: Record<string, string> = {
   'Cópialo tal cual y pégalo en el mensaje. Así se ve qué ha pasado en cada paso.': 'Copy it as it is and paste it in your message. That shows what happened at each step.',
   'El navegador indica poca memoria; puede no caber.': 'The browser reports little memory; it may not fit.',
   'No se ha podido guardar {m} en el disco: lo más probable es que falte espacio libre (necesita unos {s}). Libera espacio y vuelve a intentarlo; lo ya descargado se conserva.': 'Could not save {m} to disk, most likely because there is not enough free space (it needs about {s}). Free some space and try again; what was already downloaded is kept.',
+  'Leyendo {m} del disco · {a} de {b}': 'Reading {m} from disk · {a} of {b}',
   'Descargando {m} · {a} de {b}': 'Downloading {m} · {a} of {b}',
   'Parar (Esc)': 'Stop (Esc)',
   'Enviar (Intro)': 'Send (Enter)',
