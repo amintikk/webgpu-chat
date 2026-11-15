@@ -1593,7 +1593,7 @@ dialog {
   color: var(--accent);
 }
 
-/* Composer: a glass capsule; a soft two-tone halo when focused, breathing while the model works. */
+/* Composer: a glass capsule; a soft two-tone halo when focused, steady while the model works. */
 .load-banner {
   border-radius: 20px;
   background: var(--glass-fill);
@@ -1635,13 +1635,13 @@ dialog {
 }
 html[data-mood='thinking'] .composer::after,
 html[data-mood='writing'] .composer::after {
-  opacity: 0.4;
-  animation: halo 2.6s ease-in-out infinite;
+  opacity: 0.3;
 }
-@keyframes halo {
-  50% {
-    opacity: 0.18;
-  }
+/* While the model works nothing on the page moves in a loop: each animated frame makes the browser composite
+   the whole page (aurora fields, blurred glass) again on the GPU the model is using. */
+html[data-mood='thinking'] :is(.cursor, .dot.busy, .streaming .reasoning[open] summary span),
+html[data-mood='writing'] :is(.cursor, .dot.busy, .streaming .reasoning[open] summary span) {
+  animation: none;
 }
 .chip {
   border-color: var(--border-strong);

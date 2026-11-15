@@ -8,6 +8,7 @@
 //   loading   two ribbons sweep across the top while a band at the bottom grows with the download
 //   thinking  blue and violet orbit each other around the centre and breathe slowly
 //   writing   the light flows upwards from the composer, a little brighter as text arrives
+// (thinking and writing settle into their pose and then hold still, so the model has the GPU to itself)
 // Every state's pose is computed every frame and the states are cross-blended with eased weights, so
 // moving from one to another is a smooth morph, never a jump. With "reduce motion" the aurora stays still.
 
@@ -27,6 +28,12 @@ let root: HTMLElement | null = null;
 let mood: Mood = 'idle';
 let pulse = 0; // short-lived extra brightness from keystrokes or arriving text
 let progress = 0; // download progress, 0-1 (loading)
+// While the model thinks or writes, the GPU is its: the light morphs into that state's pose and then holds
+// still. Every moved frame makes the browser composite three viewport-sized fields and redo the frosted-glass
+// blur over them, which on an integrated GPU halved the model's speed (Gemma 4 12B: 2 vs 4.6 tokens/s).
+const BUSY: ReadonlySet<Mood> = new Set<Mood>(['thinking', 'writing']);
+const SETTLE_MS = 1600;
+let busySince = 0;
 
 const TAU = Math.PI * 2;
 const wave = (t: number, hz: number, off = 0) => Math.sin(t * hz * TAU + off);
@@ -129,7 +136,8 @@ export function mountAurora(opts: AuroraOptions = {}): void {
   const frame = (now: number) => {
     const dt = Math.min(0.1, (now - last) / 1000);
     last = now;
-    if (!document.hidden) {
+    const still = BUSY.has(mood) && now - busySince > SETTLE_MS;
+    if (!document.hidden && !still) {
       // Cross-blend the states (about 1.1 s), and advance each state's own clock while it is visible.
       const k = 1 - Math.exp(-dt / 1.1);
       for (const m of MOODS) {
@@ -175,6 +183,7 @@ export function mountAurora(opts: AuroraOptions = {}): void {
 
 export function setMood(next: Mood): void {
   if (next === mood) return;
+  if (BUSY.has(next) && !BUSY.has(mood)) busySince = performance.now();
   mood = next;
   document.documentElement.dataset.mood = next;
 }
