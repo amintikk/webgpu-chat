@@ -1488,6 +1488,10 @@ dialog {
   border-radius: 16px;
   transition: background 0.25s;
 }
+/* A little air between options, so the hover of one never touches the selected one next to it. */
+.picker-opt + .picker-opt {
+  margin-top: 4px;
+}
 .picker-opt.selected {
   background: var(--accent-soft);
 }
