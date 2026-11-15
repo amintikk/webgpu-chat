@@ -181,7 +181,7 @@ export const EN: Record<string, string> = {
   'El modelo más capaz de la web: respuestas más completas y precisas.': 'The most capable model on this site: more complete and accurate responses.',
   'Redacción cuidada, resúmenes largos, programación y razonamiento.': 'Careful writing, long summaries, programming, and reasoning.',
   'Muy buen español y más de 140 idiomas.': 'Very good Spanish and more than 140 languages.',
-  'Descarga de 7,5 GB y carga lenta la primera vez.': 'A 7.5 GB download and a slow first load.',
+  'Descarga de 6,8 GB y carga lenta la primera vez.': 'A 6.8 GB download and a slow first load.',
   'Necesita una GPU potente; en equipos justos fallará al cargar o irá muy lento.': 'Needs a powerful GPU; on modest devices it will fail to load or run very slowly.',
   'Exportación propia del modelo oficial cuantizada a 4 bits: algo menos precisa que el original.': 'Own export of the official model quantized to 4 bits: slightly less accurate than the original.',
   'Contexto limitado a 4.096 tokens en esta web para contener la memoria.': 'Context limited to 4,096 tokens on this site to keep memory usage down.',

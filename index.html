@@ -44,7 +44,7 @@
         "author": { "@type": "Person", "name": "Amin Tahtah Toumi" }
       }
     </script>
-    <script type="application/ld+json" id="ld-extra">[{"@context": "https://schema.org", "@type": "WebSite", "name": "WebGPU Chat", "url": "https://llm.aminox.dev/", "inLanguage": "es"}, {"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "¿Necesito internet?", "acceptedAnswer": {"@type": "Answer", "text": "Solo la primera vez, para abrir la web y descargar el modelo. Después puedes chatear sin conexión: la web y el modelo quedan guardados en tu navegador."}}, {"@type": "Question", "name": "¿De verdad no se envía nada?", "acceptedAnswer": {"@type": "Answer", "text": "Tus mensajes no salen del navegador. Solo se descargan los modelos desde Hugging Face, que, como cualquier servidor, ve tu dirección IP. La web solo puede conectarse a sí misma y a Hugging Face."}}, {"@type": "Question", "name": "¿Qué necesito?", "acceptedAnswer": {"@type": "Answer", "text": "Chrome o Edge recientes (o Safari 26) y una GPU con soporte de números de 16 bits. El modelo ligero va bien con gráficas integradas."}}, {"@type": "Question", "name": "¿Cuánto ocupa y cómo lo borro?", "acceptedAnswer": {"@type": "Answer", "text": "Entre 1,1 y 7,5 GB por modelo. En la app, «Modelos» muestra lo que ocupa cada uno y lo borra."}}, {"@type": "Question", "name": "¿Es gratis?", "acceptedAnswer": {"@type": "Answer", "text": "Sí. Proyecto personal, sin publicidad ni registro, con código abierto."}}]}]</script>
+    <script type="application/ld+json" id="ld-extra">[{"@context": "https://schema.org", "@type": "WebSite", "name": "WebGPU Chat", "url": "https://llm.aminox.dev/", "inLanguage": "es"}, {"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "¿Necesito internet?", "acceptedAnswer": {"@type": "Answer", "text": "Solo la primera vez, para abrir la web y descargar el modelo. Después puedes chatear sin conexión: la web y el modelo quedan guardados en tu navegador."}}, {"@type": "Question", "name": "¿De verdad no se envía nada?", "acceptedAnswer": {"@type": "Answer", "text": "Tus mensajes no salen del navegador. Solo se descargan los modelos desde Hugging Face, que, como cualquier servidor, ve tu dirección IP. La web solo puede conectarse a sí misma y a Hugging Face."}}, {"@type": "Question", "name": "¿Qué necesito?", "acceptedAnswer": {"@type": "Answer", "text": "Chrome o Edge recientes (o Safari 26) y una GPU con soporte de números de 16 bits. El modelo ligero va bien con gráficas integradas."}}, {"@type": "Question", "name": "¿Cuánto ocupa y cómo lo borro?", "acceptedAnswer": {"@type": "Answer", "text": "Entre 1,1 y 6,8 GB por modelo. En la app, «Modelos» muestra lo que ocupa cada uno y lo borra."}}, {"@type": "Question", "name": "¿Es gratis?", "acceptedAnswer": {"@type": "Answer", "text": "Sí. Proyecto personal, sin publicidad ni registro, con código abierto."}}]}]</script>
   </head>
   <body class="site">
     <!--#header-->
@@ -136,13 +136,13 @@
             <article class="model glass" data-glow data-reveal>
               <h3>Gemma 4 12B</h3>
               <p>El más capaz, para equipos potentes.</p>
-              <span class="size">7,5 GB</span>
+              <span class="size">6,8 GB</span>
               <a class="more" href="/modelos/gemma-4-12b/">Saber más</a>
               <details>
                 <summary>Ficha</summary>
                 <dl>
                   <dt>Bien</dt><dd>Respuestas más completas y precisas: redacción, resúmenes largos, programación y razonamiento.</dd>
-                  <dt>Límites</dt><dd>Descarga grande y carga lenta la primera vez; exportación propia a 4 bits, <a href="https://huggingface.co/AMINOXDEV/gemma-4-12B-it-ONNX" target="_blank" rel="noopener">validada frente al original</a>.</dd>
+                  <dt>Límites</dt><dd>Descarga grande y carga lenta la primera vez; pesos <a href="https://huggingface.co/google/gemma-4-12B-it-qat-q4_0-unquantized" target="_blank" rel="noopener">QAT de Google</a> a 4 bits.</dd>
                   <dt>Equipo</dt><dd>GPU con 10 GB o más (o un Mac con chip M y 16 GB).</dd>
                   <dt>Licencia</dt><dd>Apache 2.0 (Google).</dd>
                 </dl>
@@ -170,7 +170,7 @@
           </details>
           <details data-reveal>
             <summary>¿Cuánto ocupa y cómo lo borro?</summary>
-            <p>Entre 1,1 y 7,5 GB por modelo. En la app, «Modelos» muestra lo que ocupa cada uno y lo borra.</p>
+            <p>Entre 1,1 y 6,8 GB por modelo. En la app, «Modelos» muestra lo que ocupa cada uno y lo borra.</p>
           </details>
           <details data-reveal>
             <summary>¿Es gratis?</summary>

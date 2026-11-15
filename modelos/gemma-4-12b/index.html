@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Gemma 4 12B en el navegador con WebGPU, gratis y offline · WebGPU Chat</title>
-    <meta name="description" content="Ejecuta Gemma 4 12B de Google en tu navegador con WebGPU: exportación ONNX propia a 4 bits validada frente al original, sin internet tras la descarga (7,5 GB). Requisitos y licencia." />
+    <meta name="description" content="Ejecuta Gemma 4 12B de Google en tu navegador con WebGPU: versión QAT de Google a 4 bits con atención fusionada, sin internet tras la descarga (6,8 GB). Requisitos y licencia." />
     <link rel="canonical" href="https://llm.aminox.dev/modelos/gemma-4-12b/" />
     <link rel="alternate" hreflang="es" href="https://llm.aminox.dev/modelos/gemma-4-12b/" />
     <link rel="alternate" hreflang="en" href="https://llm.aminox.dev/en/models/gemma-4-12b/" />
@@ -12,7 +12,7 @@
     <meta property="og:type" content="article" />
     <meta property="og:site_name" content="WebGPU Chat" />
     <meta property="og:title" content="Gemma 4 12B en tu navegador" />
-    <meta property="og:description" content="Ejecuta Gemma 4 12B de Google en tu navegador con WebGPU: exportación ONNX propia a 4 bits validada frente al original, sin internet tras la descarga (7,5 GB). Requisitos y licencia." />
+    <meta property="og:description" content="Ejecuta Gemma 4 12B de Google en tu navegador con WebGPU: versión QAT de Google a 4 bits con atención fusionada, sin internet tras la descarga (6,8 GB). Requisitos y licencia." />
     <meta property="og:url" content="https://llm.aminox.dev/modelos/gemma-4-12b/" />
     <meta property="og:image" content="https://llm.aminox.dev/og-es.png" />
     <meta property="og:image:width" content="1200" />
@@ -21,7 +21,7 @@
     <meta property="og:locale:alternate" content="en_US" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Gemma 4 12B en tu navegador" />
-    <meta name="twitter:description" content="Ejecuta Gemma 4 12B de Google en tu navegador con WebGPU: exportación ONNX propia a 4 bits validada frente al original, sin internet tras la descarga (7,5 GB). Requisitos y licencia." />
+    <meta name="twitter:description" content="Ejecuta Gemma 4 12B de Google en tu navegador con WebGPU: versión QAT de Google a 4 bits con atención fusionada, sin internet tras la descarga (6,8 GB). Requisitos y licencia." />
     <meta name="twitter:image" content="https://llm.aminox.dev/og-es.png" />
     <meta name="color-scheme" content="light dark" />
     <link rel="icon" href="/favicon.ico" sizes="any" />
@@ -29,7 +29,7 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
     <script src="/theme.js"></script>
-    <script type="application/ld+json">[{"@context":"https://schema.org","@type":"WebPage","name":"Gemma 4 12B en tu navegador","description":"Ejecuta Gemma 4 12B de Google en tu navegador con WebGPU: exportación ONNX propia a 4 bits validada frente al original, sin internet tras la descarga (7,5 GB). Requisitos y licencia.","url":"https://llm.aminox.dev/modelos/gemma-4-12b/","inLanguage":"es","isPartOf":{"@type":"WebSite","name":"WebGPU Chat","url":"https://llm.aminox.dev/"},"dateModified":"2026-11-14","author":{"@type":"Person","name":"Amin Tahtah Toumi"}},{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"WebGPU Chat","item":"https://llm.aminox.dev/"},{"@type":"ListItem","position":2,"name":"Gemma 4 12B","item":"https://llm.aminox.dev/modelos/gemma-4-12b/"}]},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"¿Mi equipo puede ejecutar Gemma 4 12B?","acceptedAnswer":{"@type":"Answer","text":"Si tienes una GPU dedicada con 10 GB o más, o un Mac con chip M y 16 GB, probablemente sí. La app comprueba tu GPU y la prueba de rendimiento te da una nota de 0 a 10."}},{"@type":"Question","name":"¿Gemma 4 12B funciona sin internet?","acceptedAnswer":{"@type":"Answer","text":"Sí, después de descargarlo una vez (7,5 GB)."}}]}]</script>
+    <script type="application/ld+json">[{"@context":"https://schema.org","@type":"WebPage","name":"Gemma 4 12B en tu navegador","description":"Ejecuta Gemma 4 12B de Google en tu navegador con WebGPU: versión QAT de Google a 4 bits con atención fusionada, sin internet tras la descarga (6,8 GB). Requisitos y licencia.","url":"https://llm.aminox.dev/modelos/gemma-4-12b/","inLanguage":"es","isPartOf":{"@type":"WebSite","name":"WebGPU Chat","url":"https://llm.aminox.dev/"},"dateModified":"2026-11-15","author":{"@type":"Person","name":"Amin Tahtah Toumi"}},{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"WebGPU Chat","item":"https://llm.aminox.dev/"},{"@type":"ListItem","position":2,"name":"Gemma 4 12B","item":"https://llm.aminox.dev/modelos/gemma-4-12b/"}]},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"¿Mi equipo puede ejecutar Gemma 4 12B?","acceptedAnswer":{"@type":"Answer","text":"Si tienes una GPU dedicada con 10 GB o más, o un Mac con chip M y 16 GB, probablemente sí. La app comprueba tu GPU y la prueba de rendimiento te da una nota de 0 a 10."}},{"@type":"Question","name":"¿Gemma 4 12B funciona sin internet?","acceptedAnswer":{"@type":"Answer","text":"Sí, después de descargarlo una vez (6,8 GB)."}}]}]</script>
   </head>
   <body class="site">
     <!--#header-->
@@ -38,18 +38,18 @@
         <nav class="crumbs" aria-label="Ruta"><a href="/">Inicio</a><span aria-hidden="true">›</span><span>Gemma 4 12B</span></nav>
         <h1 data-reveal>Gemma 4 12B en tu navegador</h1>
         <p class="lead" data-reveal>Gemma 4 12B es el modelo máximo de WebGPU Chat: el más capaz de los tres, con respuestas más completas y precisas, para equipos con una GPU potente.</p>
-        <dl class="facts glass" data-reveal><div><dt>Autor</dt><dd>Google DeepMind</dd></div><div><dt>Parámetros</dt><dd>12.000 millones</dd></div><div><dt>Descarga</dt><dd>7,5 GB (q4f16)</dd></div><div><dt>Contexto en la web</dt><dd>4.096 tokens</dd></div><div><dt>Idiomas</dt><dd>Más de 140</dd></div><div><dt>Licencia</dt><dd>Apache 2.0</dd></div></dl>
+        <dl class="facts glass" data-reveal><div><dt>Autor</dt><dd>Google DeepMind</dd></div><div><dt>Parámetros</dt><dd>12.000 millones</dd></div><div><dt>Descarga</dt><dd>6,8 GB (q4f16)</dd></div><div><dt>Contexto en la web</dt><dd>4.096 tokens</dd></div><div><dt>Idiomas</dt><dd>Más de 140</dd></div><div><dt>Licencia</dt><dd>Apache 2.0</dd></div></dl>
         <section data-reveal>
           <h2>Qué hace bien</h2>
           <ul><li>Respuestas más completas y precisas que los modelos pequeños.</li><li>Redacción cuidada, resúmenes largos, programación y razonamiento.</li><li>Muy buen español y más de 140 idiomas.</li></ul>
         </section>
         <section data-reveal>
-          <h2>Una exportación propia, validada</h2>
-          <p>No había una versión ONNX fiable de Gemma 4 12B, así que la exportamos nosotros desde los pesos oficiales de Google a 4 bits (q4f16), en archivos de menos de 2 GB. Después la comparamos con el modelo original en PyTorch usando decodificación voraz: con los mismos pesos cuantizados coincide en el 97,8 % de los pasos (las diferencias son casi empates por redondeo), y con los pesos originales sin cuantizar, en el 92,3 %. El modelo y su ficha están publicados en <a href="https://huggingface.co/AMINOXDEV/gemma-4-12B-it-ONNX" rel="noopener">Hugging Face</a>.</p>
+          <h2>Pesos QAT y atención fusionada</h2>
+          <p>Usamos la versión QAT de Google (gemma-4-12B-it-qat-q4_0), entrenada para funcionar a 4 bits, por lo que pierde menos calidad que una cuantización directa. La conversión a ONNX es de la comunidad (james58899/gemma-4-12B-it-qat-ONNX) y usa atención fusionada (GroupQueryAttention), con menos de la mitad de operaciones que nuestra exportación anterior; nosotros solo activamos en su grafo el cálculo en enteros para leer el prompt más rápido. Nuestra exportación propia, validada frente al original, sigue publicada en <a href="https://huggingface.co/AMINOXDEV/gemma-4-12B-it-ONNX" rel="noopener">Hugging Face</a>.</p>
         </section>
         <section data-reveal>
           <h2>Sus límites</h2>
-          <ul><li>Descarga de 7,5 GB y carga lenta la primera vez.</li><li>Necesita una GPU potente: en equipos justos fallará al cargar o irá muy lento.</li><li>Algo menos preciso que el original por la cuantización a 4 bits.</li><li>Contexto limitado a 4.096 tokens en esta web para contener la memoria.</li></ul>
+          <ul><li>Descarga de 6,8 GB y carga lenta la primera vez.</li><li>Necesita una GPU potente: en equipos justos fallará al cargar o irá muy lento.</li><li>Algo menos preciso que el original por la cuantización a 4 bits.</li><li>Contexto limitado a 4.096 tokens en esta web para contener la memoria.</li></ul>
         </section>
         <section data-reveal>
           <h2>Qué equipo necesitas</h2>
@@ -57,7 +57,7 @@
         </section>
         <section data-reveal>
           <h2>Licencia</h2>
-          <p>Apache 2.0 de Google (Gemma 4): uso libre, también comercial, conservando el aviso de licencia. Nuestra exportación mantiene la misma licencia y su NOTICE.</p>
+          <p>Apache 2.0 de Google (Gemma 4): uso libre, también comercial, conservando el aviso de licencia. La conversión mantiene la misma licencia.</p>
         </section>
         <div class="cta-box glass" data-reveal>
           <a class="btn primary" href="/app/?model=gemma4-12b">Chatear con Gemma 4 12B</a>
@@ -66,7 +66,7 @@
         <section class="faq" data-reveal>
           <h2>Preguntas frecuentes</h2>
           <details><summary>¿Mi equipo puede ejecutar Gemma 4 12B?</summary><p>Si tienes una GPU dedicada con 10 GB o más, o un Mac con chip M y 16 GB, probablemente sí. La app comprueba tu GPU y la prueba de rendimiento te da una nota de 0 a 10.</p></details>
-          <details><summary>¿Gemma 4 12B funciona sin internet?</summary><p>Sí, después de descargarlo una vez (7,5 GB).</p></details>
+          <details><summary>¿Gemma 4 12B funciona sin internet?</summary><p>Sí, después de descargarlo una vez (6,8 GB).</p></details>
         </section>
         <section data-reveal>
           <h2>Sigue leyendo</h2>

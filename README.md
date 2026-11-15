@@ -16,7 +16,7 @@ las conversaciones se guardan en IndexedDB. Nada de lo que escribes sale de tu e
 |---|---|---|---|---|
 | Ligero | LFM3 1.7B (Liquid AI) | [onnx-community/LFM3-1.7B-ONNX@ab9fec4](https://huggingface.co/onnx-community/LFM3-1.7B-ONNX/tree/ab9fec4c681a25bec3b48b0b97a62fc2660a2985) | 1,11 GB | [LFM Open License v1.0](licenses/LFM-Open-License-v1.0.txt) |
 | Recomendado | Qwen3.5 4B (Qwen) | [onnx-community/Qwen3.5-4B-ONNX-OPT@bb07226](https://huggingface.co/onnx-community/Qwen3.5-4B-ONNX-OPT/tree/bb072268d0912bdc5cf4f41c8c6f53a03fd68624) (exportación optimizada: atención lineal fusionada, sin bucles en la CPU), solo texto | 2,82 GB | Apache 2.0 |
-| Máximo | Gemma 4 12B (Google) | exportación propia: [AMINOXDEV/gemma-4-12B-it-ONNX@90e0a27](https://huggingface.co/AMINOXDEV/gemma-4-12B-it-ONNX/tree/90e0a27bf539717b6055d7e434b9faa1f0dbd9ff) ([tools/gemma4](tools/gemma4/)) | 7,54 GB | Apache 2.0 |
+| Máximo | Gemma 4 12B (Google, QAT) | [james58899/gemma-4-12B-it-qat-ONNX@60555e6](https://huggingface.co/james58899/gemma-4-12B-it-qat-ONNX/tree/60555e645e7c456b4a013cc2e93e9bd6379e3006) (conversión de la comunidad de los pesos QAT de Google, atención fusionada) | 6,79 GB | Apache 2.0 |
 
 Los grafos de Qwen3.5 4B y Gemma 4 12B se descargan de [AMINOXDEV/webgpu-chat-graphs](https://huggingface.co/AMINOXDEV/webgpu-chat-graphs): son los grafos originales con `accuracy_level=4` en `MatMulNBits`, para que ONNX Runtime pueda usar su camino int8 (DP4A) al procesar el prompt en GPUs con `subgroups`. Los pesos siguen viniendo de los repositorios originales (`src` en `src/engine/models.ts`).
 
@@ -90,7 +90,9 @@ Prueba de integración CPU con pesos reales ya cacheados:
 (y `qwen3.5-4b`). Comprueba validación local, prompt largo y continuación. Las cifras CPU no
 representan el rendimiento WebGPU del cliente.
 
-## Gemma 4 12B: exportación propia
+## Gemma 4 12B: exportación propia (sustituida)
+
+Desde noviembre de 2026 la app usa la conversión QAT de la comunidad (tabla de arriba): sus pesos están entrenados para 4 bits y su grafo usa atención fusionada (1.359 nodos frente a 3.350, 8 conversiones de tipo frente a 570), así que va más rápida en WebGPU. Usa el `config.json` y el tokenizador de nuestra exportación (su `config.json` declara un `model_type` que Transformers.js 4.3 no reconoce). Nuestra exportación sigue publicada y documentada aquí.
 
 No había un ONNX fiable de `google/gemma-4-12B-it`, así que `tools/gemma4/export.py` construye el grafo
 del decodificador de texto nodo a nodo (sin cargar el modelo en memoria) leyendo los tensores del

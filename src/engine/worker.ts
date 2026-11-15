@@ -269,7 +269,9 @@ async function load(id: string, dtypeOverride?: string, device = 'webgpu') {
   dbg('carga del modelo: lectura/descarga de pesos y creación de sesiones ONNX');
   const tSes = performance.now();
   try {
-    model = await cls.from_pretrained(m.repo, { ...opts, dtype, device });
+    // Tests in Node run on the CPU: skip weight prepacking and the memory arena so a 12B model fits in less RAM.
+    const session_options = device === 'cpu' ? { enableCpuMemArena: false, extra: { session: { disable_prepacking: '1' } } } : undefined;
+    model = await cls.from_pretrained(m.repo, { ...opts, dtype, device, ...(session_options ? { session_options } : {}) });
   } catch (e) {
     dbg(`creación de sesiones falló: ${errText(e)}`);
     throw e;

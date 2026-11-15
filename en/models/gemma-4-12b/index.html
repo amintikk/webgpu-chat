@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Gemma 4 12B in the browser with WebGPU, free and offline · WebGPU Chat</title>
-    <meta name="description" content="Run Google’s Gemma 4 12B in your browser with WebGPU: our own 4-bit ONNX export validated against the original, no internet after the download (7.5 GB). Requirements and licence." />
+    <meta name="description" content="Run Google’s Gemma 4 12B in your browser with WebGPU: Google’s 4-bit QAT version with fused attention, no internet after the download (6.8 GB). Requirements and licence." />
     <link rel="canonical" href="https://llm.aminox.dev/en/models/gemma-4-12b/" />
     <link rel="alternate" hreflang="es" href="https://llm.aminox.dev/modelos/gemma-4-12b/" />
     <link rel="alternate" hreflang="en" href="https://llm.aminox.dev/en/models/gemma-4-12b/" />
@@ -12,7 +12,7 @@
     <meta property="og:type" content="article" />
     <meta property="og:site_name" content="WebGPU Chat" />
     <meta property="og:title" content="Gemma 4 12B in your browser" />
-    <meta property="og:description" content="Run Google’s Gemma 4 12B in your browser with WebGPU: our own 4-bit ONNX export validated against the original, no internet after the download (7.5 GB). Requirements and licence." />
+    <meta property="og:description" content="Run Google’s Gemma 4 12B in your browser with WebGPU: Google’s 4-bit QAT version with fused attention, no internet after the download (6.8 GB). Requirements and licence." />
     <meta property="og:url" content="https://llm.aminox.dev/en/models/gemma-4-12b/" />
     <meta property="og:image" content="https://llm.aminox.dev/og-en.png" />
     <meta property="og:image:width" content="1200" />
@@ -21,7 +21,7 @@
     <meta property="og:locale:alternate" content="es_ES" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Gemma 4 12B in your browser" />
-    <meta name="twitter:description" content="Run Google’s Gemma 4 12B in your browser with WebGPU: our own 4-bit ONNX export validated against the original, no internet after the download (7.5 GB). Requirements and licence." />
+    <meta name="twitter:description" content="Run Google’s Gemma 4 12B in your browser with WebGPU: Google’s 4-bit QAT version with fused attention, no internet after the download (6.8 GB). Requirements and licence." />
     <meta name="twitter:image" content="https://llm.aminox.dev/og-en.png" />
     <meta name="color-scheme" content="light dark" />
     <link rel="icon" href="/favicon.ico" sizes="any" />
@@ -29,7 +29,7 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
     <script src="/theme.js"></script>
-    <script type="application/ld+json">[{"@context":"https://schema.org","@type":"WebPage","name":"Gemma 4 12B in your browser","description":"Run Google’s Gemma 4 12B in your browser with WebGPU: our own 4-bit ONNX export validated against the original, no internet after the download (7.5 GB). Requirements and licence.","url":"https://llm.aminox.dev/en/models/gemma-4-12b/","inLanguage":"en","isPartOf":{"@type":"WebSite","name":"WebGPU Chat","url":"https://llm.aminox.dev/en/"},"dateModified":"2026-11-14","author":{"@type":"Person","name":"Amin Tahtah Toumi"}},{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"WebGPU Chat","item":"https://llm.aminox.dev/en/"},{"@type":"ListItem","position":2,"name":"Gemma 4 12B","item":"https://llm.aminox.dev/en/models/gemma-4-12b/"}]},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Can my computer run Gemma 4 12B?","acceptedAnswer":{"@type":"Answer","text":"If you have a dedicated GPU with 10 GB or more, or an Apple silicon Mac with 16 GB, probably yes. The app checks your GPU and the performance test gives you a 0-10 score."}},{"@type":"Question","name":"Does Gemma 4 12B work offline?","acceptedAnswer":{"@type":"Answer","text":"Yes, after downloading it once (7.5 GB)."}}]}]</script>
+    <script type="application/ld+json">[{"@context":"https://schema.org","@type":"WebPage","name":"Gemma 4 12B in your browser","description":"Run Google’s Gemma 4 12B in your browser with WebGPU: Google’s 4-bit QAT version with fused attention, no internet after the download (6.8 GB). Requirements and licence.","url":"https://llm.aminox.dev/en/models/gemma-4-12b/","inLanguage":"en","isPartOf":{"@type":"WebSite","name":"WebGPU Chat","url":"https://llm.aminox.dev/en/"},"dateModified":"2026-11-15","author":{"@type":"Person","name":"Amin Tahtah Toumi"}},{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"WebGPU Chat","item":"https://llm.aminox.dev/en/"},{"@type":"ListItem","position":2,"name":"Gemma 4 12B","item":"https://llm.aminox.dev/en/models/gemma-4-12b/"}]},{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Can my computer run Gemma 4 12B?","acceptedAnswer":{"@type":"Answer","text":"If you have a dedicated GPU with 10 GB or more, or an Apple silicon Mac with 16 GB, probably yes. The app checks your GPU and the performance test gives you a 0-10 score."}},{"@type":"Question","name":"Does Gemma 4 12B work offline?","acceptedAnswer":{"@type":"Answer","text":"Yes, after downloading it once (6.8 GB)."}}]}]</script>
   </head>
   <body class="site">
     <!--#header-en-->
@@ -38,18 +38,18 @@
         <nav class="crumbs" aria-label="Breadcrumb"><a href="/en/">Home</a><span aria-hidden="true">›</span><span>Gemma 4 12B</span></nav>
         <h1 data-reveal>Gemma 4 12B in your browser</h1>
         <p class="lead" data-reveal>Gemma 4 12B is WebGPU Chat’s largest model: the most capable of the three, with more complete and accurate answers, for machines with a powerful GPU.</p>
-        <dl class="facts glass" data-reveal><div><dt>Author</dt><dd>Google DeepMind</dd></div><div><dt>Parameters</dt><dd>12 billion</dd></div><div><dt>Download</dt><dd>7.5 GB (q4f16)</dd></div><div><dt>Context on the site</dt><dd>4,096 tokens</dd></div><div><dt>Languages</dt><dd>More than 140</dd></div><div><dt>License</dt><dd>Apache 2.0</dd></div></dl>
+        <dl class="facts glass" data-reveal><div><dt>Author</dt><dd>Google DeepMind</dd></div><div><dt>Parameters</dt><dd>12 billion</dd></div><div><dt>Download</dt><dd>6.8 GB (q4f16)</dd></div><div><dt>Context on the site</dt><dd>4,096 tokens</dd></div><div><dt>Languages</dt><dd>More than 140</dd></div><div><dt>License</dt><dd>Apache 2.0</dd></div></dl>
         <section data-reveal>
           <h2>What it does well</h2>
           <ul><li>More complete and accurate answers than the small models.</li><li>Careful writing, long summaries, coding and reasoning.</li><li>Very good Spanish and more than 140 languages.</li></ul>
         </section>
         <section data-reveal>
-          <h2>Our own export, validated</h2>
-          <p>There was no reliable ONNX version of Gemma 4 12B, so we exported it ourselves from Google’s official weights to 4 bits (q4f16), in files smaller than 2 GB. We then compared it with the original model in PyTorch using greedy decoding: with the same quantized weights it agrees on 97.8% of the steps (the differences are near-ties from rounding), and with the original unquantized weights on 92.3%. The model and its card are published on <a href="https://huggingface.co/AMINOXDEV/gemma-4-12B-it-ONNX" rel="noopener">Hugging Face</a>.</p>
+          <h2>QAT weights and fused attention</h2>
+          <p>We use Google’s QAT version (gemma-4-12B-it-qat-q4_0), trained to run at 4 bits, so it loses less quality than plain quantization. The ONNX conversion comes from the community (james58899/gemma-4-12B-it-qat-ONNX) and uses fused attention (GroupQueryAttention), with less than half the operations of our earlier export; we only switch on integer math in its graph so prompts are read faster. Our own export, validated against the original, is still published on <a href="https://huggingface.co/AMINOXDEV/gemma-4-12B-it-ONNX" rel="noopener">Hugging Face</a>.</p>
         </section>
         <section data-reveal>
           <h2>Its limits</h2>
-          <ul><li>A 7.5 GB download and a slow first load.</li><li>Needs a powerful GPU: on modest machines it will fail to load or run very slowly.</li><li>Slightly less accurate than the original because of 4-bit quantization.</li><li>Context limited to 4,096 tokens on this site to keep memory in check.</li></ul>
+          <ul><li>A 6.8 GB download and a slow first load.</li><li>Needs a powerful GPU: on modest machines it will fail to load or run very slowly.</li><li>Slightly less accurate than the original because of 4-bit quantization.</li><li>Context limited to 4,096 tokens on this site to keep memory in check.</li></ul>
         </section>
         <section data-reveal>
           <h2>Hardware you need</h2>
@@ -57,7 +57,7 @@
         </section>
         <section data-reveal>
           <h2>License</h2>
-          <p>Apache 2.0 by Google (Gemma 4): free use, including commercial, keeping the licence notice. Our export keeps the same licence and its NOTICE.</p>
+          <p>Apache 2.0 by Google (Gemma 4): free use, including commercial, keeping the licence notice. The conversion keeps the same licence.</p>
         </section>
         <div class="cta-box glass" data-reveal>
           <a class="btn primary" href="/en/app/?model=gemma4-12b">Chat with Gemma 4 12B</a>
@@ -66,7 +66,7 @@
         <section class="faq" data-reveal>
           <h2>Frequently asked questions</h2>
           <details><summary>Can my computer run Gemma 4 12B?</summary><p>If you have a dedicated GPU with 10 GB or more, or an Apple silicon Mac with 16 GB, probably yes. The app checks your GPU and the performance test gives you a 0-10 score.</p></details>
-          <details><summary>Does Gemma 4 12B work offline?</summary><p>Yes, after downloading it once (7.5 GB).</p></details>
+          <details><summary>Does Gemma 4 12B work offline?</summary><p>Yes, after downloading it once (6.8 GB).</p></details>
         </section>
         <section data-reveal>
           <h2>Keep reading</h2>

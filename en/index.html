@@ -44,7 +44,7 @@
         "author": { "@type": "Person", "name": "Amin Tahtah Toumi" }
       }
     </script>
-    <script type="application/ld+json" id="ld-extra">[{"@context": "https://schema.org", "@type": "WebSite", "name": "WebGPU Chat", "url": "https://llm.aminox.dev/en/", "inLanguage": "en"}, {"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "Do I need internet?", "acceptedAnswer": {"@type": "Answer", "text": "Only the first time, to open the site and download the model. After that you can chat offline: the site and the model stay stored in your browser."}}, {"@type": "Question", "name": "Is nothing really sent?", "acceptedAnswer": {"@type": "Answer", "text": "Your messages never leave the browser. Only the models are downloaded from Hugging Face, which, like any server, sees your IP address. The site can only connect to itself and to Hugging Face."}}, {"@type": "Question", "name": "What do I need?", "acceptedAnswer": {"@type": "Answer", "text": "A recent Chrome or Edge (or Safari 26) and a GPU that supports 16-bit numbers. The light model runs well on integrated graphics."}}, {"@type": "Question", "name": "How much space, and how do I delete it?", "acceptedAnswer": {"@type": "Answer", "text": "Between 1.1 and 7.5 GB per model. In the app, “Models” shows each one’s size and deletes it."}}, {"@type": "Question", "name": "Is it free?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. A personal project, no ads or sign-up, and open source."}}]}]</script>
+    <script type="application/ld+json" id="ld-extra">[{"@context": "https://schema.org", "@type": "WebSite", "name": "WebGPU Chat", "url": "https://llm.aminox.dev/en/", "inLanguage": "en"}, {"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "Do I need internet?", "acceptedAnswer": {"@type": "Answer", "text": "Only the first time, to open the site and download the model. After that you can chat offline: the site and the model stay stored in your browser."}}, {"@type": "Question", "name": "Is nothing really sent?", "acceptedAnswer": {"@type": "Answer", "text": "Your messages never leave the browser. Only the models are downloaded from Hugging Face, which, like any server, sees your IP address. The site can only connect to itself and to Hugging Face."}}, {"@type": "Question", "name": "What do I need?", "acceptedAnswer": {"@type": "Answer", "text": "A recent Chrome or Edge (or Safari 26) and a GPU that supports 16-bit numbers. The light model runs well on integrated graphics."}}, {"@type": "Question", "name": "How much space, and how do I delete it?", "acceptedAnswer": {"@type": "Answer", "text": "Between 1.1 and 6.8 GB per model. In the app, “Models” shows each one’s size and deletes it."}}, {"@type": "Question", "name": "Is it free?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. A personal project, no ads or sign-up, and open source."}}]}]</script>
   </head>
   <body class="site">
     <!--#header-en-->
@@ -136,13 +136,13 @@
             <article class="model glass" data-glow data-reveal>
               <h3>Gemma 4 12B</h3>
               <p>The most capable, for powerful machines.</p>
-              <span class="size">7.5 GB</span>
+              <span class="size">6.8 GB</span>
               <a class="more" href="/en/models/gemma-4-12b/">Learn more</a>
               <details>
                 <summary>Details</summary>
                 <dl>
                   <dt>Good at</dt><dd>More complete and accurate answers: writing, long summaries, coding and reasoning.</dd>
-                  <dt>Limits</dt><dd>Large download and slow first load; our own 4-bit export, <a href="https://huggingface.co/AMINOXDEV/gemma-4-12B-it-ONNX" target="_blank" rel="noopener">validated against the original</a>.</dd>
+                  <dt>Limits</dt><dd>Large download and slow first load; Google’s 4-bit <a href="https://huggingface.co/google/gemma-4-12B-it-qat-q4_0-unquantized" target="_blank" rel="noopener">QAT weights</a>.</dd>
                   <dt>Hardware</dt><dd>A GPU with 10 GB or more (or an Apple silicon Mac with 16 GB).</dd>
                   <dt>License</dt><dd>Apache 2.0 (Google).</dd>
                 </dl>
@@ -170,7 +170,7 @@
           </details>
           <details data-reveal>
             <summary>How much space, and how do I delete it?</summary>
-            <p>Between 1.1 and 7.5 GB per model. In the app, “Models” shows each one’s size and deletes it.</p>
+            <p>Between 1.1 and 6.8 GB per model. In the app, “Models” shows each one’s size and deletes it.</p>
           </details>
           <details data-reveal>
             <summary>Is it free?</summary>
