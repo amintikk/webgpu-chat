@@ -40,7 +40,7 @@ function imageProcessor(m: ModelInfo): Any {
 export async function processImage(m: ModelInfo, img: ImageRef): Promise<Processed> {
   const hit = processed.get(img.id);
   if (hit) return hit;
-  const raw = await RawImage.fromBlob(img.blob);
+  const raw = onWhite(await RawImage.fromBlob(img.blob));
   const proc = imageProcessor(m);
   let p: Processed;
   if (m.vision!.kind === 'qwen') {
@@ -83,6 +83,25 @@ export function visionInputs(v: VisionInfo, images: Processed[], withPixels: boo
   }
   if (!withPixels) return {};
   return { pixel_values: cat(images.map((p) => p.pixel_values), 0), image_position_ids: cat(images.map((p) => p.positions!), 0) };
+}
+
+/**
+ * Transparent pictures (PNG, WebP, GIF) on white, as any viewer shows them. The image processors drop the alpha
+ * channel and keep whatever colours lie under transparent pixels, often noise or leftovers, which the model then
+ * reads as part of the picture.
+ */
+function onWhite(raw: RawImage): RawImage {
+  if (raw.channels !== 4) return raw;
+  const src = raw.data;
+  const out = new Uint8ClampedArray((src.length / 4) * 3);
+  for (let i = 0, j = 0; i < src.length; i += 4, j += 3) {
+    const a = src[i + 3]! / 255;
+    const w = 255 * (1 - a);
+    out[j] = src[i]! * a + w;
+    out[j + 1] = src[i + 1]! * a + w;
+    out[j + 2] = src[i + 2]! * a + w;
+  }
+  return new RawImage(out, raw.width, raw.height, 3);
 }
 
 /** The Gemma encoder takes half-precision pixels. */
