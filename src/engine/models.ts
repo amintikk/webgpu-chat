@@ -168,14 +168,9 @@ export const MODELS: ModelInfo[] = [
       formats: { 'embed_tokens_q4f16.onnx': 1, 'decoder_model_merged_q4f16.onnx': 0 },
       files: ['decoder_model_merged_q4f16.onnx_data', 'decoder_model_merged_q4f16.onnx_data_1', 'decoder_model_merged_q4f16.onnx_data_2', 'decoder_model_merged_q4f16.onnx_data_3', 'embed_tokens_q4f16.onnx_data'],
     },
-    // Gemma 4 12B sees images as 48×48-pixel patches projected straight into the language model ("unified"):
-    // the encoder is that projection, exported in fp16 by the ONNX Runtime team.
-    vision: {
-      kind: 'gemma',
-      graph: { path: 'onnx/vision_encoder_fp16.onnx', bytes: 19_002 },
-      data: { path: 'onnx/vision_encoder_fp16.onnx.data', bytes: 100_007_936, name: 'model.onnx.data' },
-      processor: { patch_size: 48, pooling_kernel_size: 1, max_soft_tokens: 280, resample: 3, do_rescale: true, rescale_factor: 1 / 255, do_resize: true, do_convert_rgb: true },
-    },
+    // No pictures: Gemma 4 12B reads them inside the language model ("unified", no vision tower), with attention
+    // in both directions between a picture's patches. This fused graph only attends backwards, so every picture
+    // reached the model scrambled. The fp16 patch projection stays in our repository for when that changes.
     largestBuffer: 503_316_480,
     gpuMemory: 8.7e9, // 6.8 GB weights + KV cache at 4096 tokens (sliding layers keep their full cache here)
     context: 4096,

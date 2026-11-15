@@ -803,7 +803,7 @@ function addFiles(files: File[]) {
     const p: Pending = { id: ++pendingSeq, name: f.name, size: f.size };
     pending.push(p);
     const image = isImageFile(f);
-    if (image && selected && !selected.vision) toast(t('{m} no puede ver imágenes. Qwen3.5 4B y Gemma 4 12B sí.', { m: selected.name }));
+    if (image && selected && !selected.vision) toast(t('{m} no puede ver imágenes. Qwen3.5 4B sí.', { m: selected.name }));
     (image
       ? readImage(f).then((img) => {
           p.image = img;
@@ -865,7 +865,7 @@ async function send() {
   const images = readyImages();
   if ((!text && !files.length && !images.length) || !pending.every(isRead) || generating || engine.busy || !selected || engine.loaded !== selected.id) return;
   if (images.length && !selected.vision) {
-    showError(t('{m} no puede ver imágenes. Cambia a Qwen3.5 4B o Gemma 4 12B, o quita la imagen.', { m: selected.name }));
+    showError(t('{m} no puede ver imágenes. Cambia a Qwen3.5 4B o quita la imagen.', { m: selected.name }));
     return;
   }
   const msg: StoredMessage = { role: 'user', content: text, ...(files.length ? { files } : {}), ...(images.length ? { images } : {}) };
