@@ -16,6 +16,7 @@ import { level, score, wait, type Level, type Wait } from './score.ts';
 import { copyButton, renderMarkdown } from './render.ts';
 import { canSpeak, localVoices, speakButton, speakSample, voicePrefs } from './speak.ts';
 import { exportBackup, readBackup } from './backup.ts';
+import { moveLegacyCache } from '../engine/cachemove.ts';
 import { ACCEPT, isImageFile, readAttachment, readImage, withAttachments, type Attachment } from './attach.ts';
 import { applyUrlDebug, clearDebug, debugOn, dlog, memoryText, reportText, setDebug, startMemoryWatch, stopMemoryWatch, watchErrors } from '../ui/debug.ts';
 
@@ -1536,6 +1537,7 @@ function showCard(m: ModelInfo) {
 }
 
 async function refreshCache() {
+  await moveLegacyCache();
   await Promise.all(AVAILABLE.map(async (m) => cacheInfo.set(m.id, await cacheStatus(m))));
 }
 

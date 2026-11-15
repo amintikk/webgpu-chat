@@ -20,6 +20,7 @@ import type { ChatMessage, FromWorker, GenOptions, ToWorker } from './protocol.t
 import { GpuProfile, OrtProfile } from './profiling.ts';
 import { splitReasoning } from './reasoning.ts';
 import { matmulBench } from './mmbench.ts';
+import { moveLegacyCache } from './cachemove.ts';
 import { expandImageTokens, forgetImages, processImage, visionInputs } from './vision.ts';
 import type { ImageRef } from './protocol.ts';
 
@@ -297,6 +298,7 @@ async function load(id: string, dtypeOverride?: string, device = 'webgpu', profi
       if (s) s.loaded = s.total;
     }
   };
+  await moveLegacyCache(); // before dropOrphans, which would delete the old copies
   await dropOutdatedFiles(m);
   await dropOrphans();
   dbg(`cargar ${m.id} (${m.cls}) · dispositivo ${device} · dtype ${JSON.stringify(dtypeOverride ?? m.dtype)}`);

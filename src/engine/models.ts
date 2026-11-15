@@ -31,6 +31,8 @@ export interface ModelInfo {
    * of config.json (0 = take `files`), and `files` are the data files those sessions get, in this order.
    */
   sharedData?: { formats: Record<string, number>; files: string[] };
+  /** The model's previous repository and revision: files cached under it are moved to the new address. */
+  legacy?: { repo: string; revision: string };
   /**
    * Image reading, when the model has it. The encoder is downloaded the first time an image is sent, not with
    * the model. `data` is the encoder's weights file as the graph names it.
@@ -64,8 +66,10 @@ export const MODELS: ModelInfo[] = [
     id: 'lfm3-1.7b',
     name: 'LFM3 1.7B',
     tier: 'light',
-    repo: 'onnx-community/LFM3-1.7B-ONNX',
-    revision: 'ab9fec4c681a25bec3b48b0b97a62fc2660a2985',
+    repo: 'AMINOXDEV/LFM3-1.7B-ONNX',
+    revision: '1ef64c82a7e6d3187a74f9103f70d733ddb9ed52',
+    // Where these files were cached before they moved to our own repository (same bytes).
+    legacy: { repo: 'onnx-community/LFM3-1.7B-ONNX', revision: 'ab9fec4c681a25bec3b48b0b97a62fc2660a2985' },
     cls: 'Lfm3ForCausalLM',
     dtype: 'q4f16',
     files: [
@@ -92,8 +96,10 @@ export const MODELS: ModelInfo[] = [
     // The -OPT export fuses the linear-attention layers (LinearAttention, CausalConvWithState) and computes logits
     // only for the last position. The original repo ran each prompt position in a loop driven by the CPU (Scan inside
     // If), which WebGPU cannot run on its own: about 14 s before the first word for a short prompt.
-    repo: 'onnx-community/Qwen3.5-4B-ONNX-OPT',
-    revision: 'bb072268d0912bdc5cf4f41c8c6f53a03fd68624',
+    repo: 'AMINOXDEV/Qwen3.5-4B-ONNX',
+    revision: 'b63dbd33b9d3b9b96b711f060e4dddfe66993ef5',
+    // Where these files were cached before they moved to our own repository (same bytes).
+    legacy: { repo: 'onnx-community/Qwen3.5-4B-ONNX-OPT', revision: 'bb072268d0912bdc5cf4f41c8c6f53a03fd68624' },
     cls: 'Qwen3_5ForCausalLM',
     dtype: { embed_tokens: 'q4f16', decoder_model_merged: 'q4f16' },
     files: [
@@ -103,8 +109,8 @@ export const MODELS: ModelInfo[] = [
       { path: 'tokenizer_config.json', bytes: 10_070 },
       { path: 'onnx/embed_tokens_q4f16.onnx', bytes: 1_064 },
       { path: 'onnx/embed_tokens_q4f16.onnx_data', bytes: 367_513_600 },
-      // Same graph with accuracy_level=4 on MatMulNBits (int8 DP4A path for prompts); see AMINOXDEV/webgpu-chat-graphs.
-      { path: 'onnx/decoder_model_merged_q4f16.onnx', bytes: 939_281, src: { repo: 'AMINOXDEV/webgpu-chat-graphs', revision: 'd1b60fb60d2ff1d6520de073d9824d71cec35267', path: 'qwen3.5-4b-opt/decoder_model_merged_q4f16.onnx' } },
+      // Graph with accuracy_level=4 on MatMulNBits (int8 DP4A path for prompts); weights unchanged.
+      { path: 'onnx/decoder_model_merged_q4f16.onnx', bytes: 939_281 },
       { path: 'onnx/decoder_model_merged_q4f16.onnx_data', bytes: 2_065_635_328 },
       { path: 'onnx/decoder_model_merged_q4f16.onnx_data_1', bytes: 367_513_600 },
     ],
@@ -134,23 +140,24 @@ export const MODELS: ModelInfo[] = [
     id: 'gemma4-12b',
     name: 'Gemma 4 12B',
     tier: 'max',
-    // Community export of Google's QAT checkpoint (gemma-4-12B-it-qat-q4_0): 4-bit weights trained for 4 bits,
-    // fused GroupQueryAttention (1359 nodes instead of 3350 in our own export, 8 casts instead of 570). Its
-    // config.json declares a model type Transformers.js 4.3 does not know (gemma4_unified_text), so the config of
-    // our export (same architecture, as model_type gemma4) is used. The graph has accuracy_level=4 (DP4A prompts).
-    repo: 'james58899/gemma-4-12B-it-qat-ONNX',
-    revision: '60555e645e7c456b4a013cc2e93e9bd6379e3006',
+    // Our repository gathers: the community export of Google's QAT checkpoint (gemma-4-12B-it-qat-q4_0, by
+    // james58899: 4-bit weights trained for 4 bits, fused GroupQueryAttention), its graph with accuracy_level=4
+    // (DP4A prompts), a config.json and tokenizer Transformers.js 4.3 understands (model_type gemma4), and the fp16
+    // vision encoder of the ONNX Runtime team. Sources and revisions are listed in the repository's README.
+    repo: 'AMINOXDEV/gemma-4-12B-it-qat-ONNX',
+    revision: '9847447e160486f74b4fb4a90472b5da0c5bf647',
+    // Where these files were cached before they moved to our own repository (same bytes).
+    legacy: { repo: 'james58899/gemma-4-12B-it-qat-ONNX', revision: '60555e645e7c456b4a013cc2e93e9bd6379e3006' },
     cls: 'Gemma4ForCausalLM',
     dtype: { embed_tokens: 'q4f16', decoder_model_merged: 'q4f16' },
     files: [
-      { path: 'config.json', bytes: 3_555, src: { repo: 'AMINOXDEV/gemma-4-12B-it-ONNX', revision: '90e0a27bf539717b6055d7e434b9faa1f0dbd9ff', path: 'config.json' } },
+      { path: 'config.json', bytes: 3_555 },
       { path: 'generation_config.json', bytes: 260 },
-      // Tokenizer and chat template (embedded in tokenizer_config.json) from our export: same Google tokenizer.
-      { path: 'tokenizer.json', bytes: 32_157_161, src: { repo: 'AMINOXDEV/gemma-4-12B-it-ONNX', revision: '90e0a27bf539717b6055d7e434b9faa1f0dbd9ff', path: 'tokenizer.json' } },
-      { path: 'tokenizer_config.json', bytes: 22_222, src: { repo: 'AMINOXDEV/gemma-4-12B-it-ONNX', revision: '90e0a27bf539717b6055d7e434b9faa1f0dbd9ff', path: 'tokenizer_config.json' } },
+      { path: 'tokenizer.json', bytes: 32_157_161 },
+      { path: 'tokenizer_config.json', bytes: 22_222 },
       { path: 'onnx/embed_tokens_q4f16.onnx', bytes: 585 },
       { path: 'onnx/embed_tokens_q4f16.onnx_data', bytes: 566_231_040 },
-      { path: 'onnx/decoder_model_merged_q4f16.onnx', bytes: 455_338, src: { repo: 'AMINOXDEV/webgpu-chat-graphs', revision: 'fedd41d62b7427f8dbedc7819ee5bed5d0890832', path: 'gemma-4-12b-qat/decoder_model_merged_q4f16.onnx' } },
+      { path: 'onnx/decoder_model_merged_q4f16.onnx', bytes: 455_338 },
       { path: 'onnx/decoder_model_merged_q4f16.onnx_data', bytes: 1_997_070_336 },
       { path: 'onnx/decoder_model_merged_q4f16.onnx_data_1', bytes: 1_988_599_296 },
       { path: 'onnx/decoder_model_merged_q4f16.onnx_data_2', bytes: 1_977_876_480 },
@@ -165,8 +172,8 @@ export const MODELS: ModelInfo[] = [
     // the encoder is that projection, exported in fp16 by the ONNX Runtime team.
     vision: {
       kind: 'gemma',
-      graph: { path: 'onnx/vision_encoder_fp16.onnx', bytes: 19_002, src: { repo: 'justinchuby/gemma-4-12b-onnx', revision: '52a1c4fa78a69f30f96c8fe20f6368621bedbb57', path: 'f16/default/vision_encoder/model.onnx' } },
-      data: { path: 'onnx/vision_encoder_fp16.onnx.data', bytes: 100_007_936, name: 'model.onnx.data', src: { repo: 'justinchuby/gemma-4-12b-onnx', revision: '52a1c4fa78a69f30f96c8fe20f6368621bedbb57', path: 'f16/default/vision_encoder/model.onnx.data' } },
+      graph: { path: 'onnx/vision_encoder_fp16.onnx', bytes: 19_002 },
+      data: { path: 'onnx/vision_encoder_fp16.onnx.data', bytes: 100_007_936, name: 'model.onnx.data' },
       processor: { patch_size: 48, pooling_kernel_size: 1, max_soft_tokens: 280, resample: 3, do_rescale: true, rescale_factor: 1 / 255, do_resize: true, do_convert_rgb: true },
     },
     largestBuffer: 503_316_480,

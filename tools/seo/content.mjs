@@ -333,7 +333,7 @@ export const PAGES = [
         { h: 'Qué hace bien', ul: ['Explicaciones, redacción y programación de complejidad media.', 'Con el razonamiento activado, resuelve mejor problemas de matemáticas y lógica.', 'Buen nivel en español e inglés.', 'Ve imágenes: adjunta una foto o una captura (o pégala con Ctrl+V) y pregúntale por ella; se procesa en tu equipo, como el texto.'], p: 'En la <a href="/#ejemplos">portada</a> tienes diez respuestas reales suyas, sin editar: un haiku, la relatividad para niños, un plan de viaje, código en Python, una tabla y más.' },
         { h: 'Sus límites', ul: ['Más lento que LFM3 y con una descarga de casi 3 GB.', 'El razonamiento alarga mucho las respuestas: puede tardar minutos en equipos modestos.', 'Puede equivocarse en datos concretos; compruébalos.', 'La primera imagen que le envías descarga su lector de imágenes (672 MB).'] },
         { h: 'Qué equipo necesitas', p: 'Un navegador con WebGPU y shader-f16, unos 4 GB de memoria gráfica libre y 8 GB de RAM o más. Puedes probarlo también en móvil, aunque puede faltar memoria y cerrarse la pestaña.' },
-        { h: 'Licencia', p: 'Apache 2.0 de Alibaba Cloud (Qwen): uso libre, también comercial, conservando el aviso de licencia. Los archivos ONNX los publica onnx-community en Hugging Face y la web los usa en una versión fijada.' },
+        { h: 'Licencia', p: 'Apache 2.0 de Alibaba Cloud (Qwen): uso libre, también comercial, conservando el aviso de licencia. La conversión a ONNX es de onnx-community; la web la descarga, en una versión fijada, de una copia en nuestra cuenta de Hugging Face.' },
       ],
       cta: { text: 'Chatear con Qwen3.5 4B', href: '/app/?model=qwen3.5-4b' },
       faq: [
@@ -354,7 +354,7 @@ export const PAGES = [
         { h: 'What it does well', ul: ['Explanations, writing and medium-complexity coding.', 'With reasoning on, it solves maths and logic problems better.', 'Good level in English and Spanish.', 'Sees pictures: attach a photo or a screenshot (or paste it with Ctrl+V) and ask about it; it is processed on your device, like the text.'], p: 'On the <a href="/en/#ejemplos">home page</a> you will find ten of its real, unedited answers: a haiku, relativity for kids, a travel plan, Python code, a table and more.' },
         { h: 'Its limits', ul: ['Slower than LFM3, with a download of almost 3 GB.', 'Reasoning makes answers much longer: it can take minutes on modest machines.', 'It can get specific facts wrong; check them.', 'The first picture you send it downloads its picture reader (672 MB).'] },
         { h: 'Hardware you need', p: 'A browser with WebGPU and shader-f16, about 4 GB of free graphics memory and 8 GB of RAM or more. You can also try it on phones, although memory may run out and the tab may close.' },
-        { h: 'License', p: 'Apache 2.0 by Alibaba Cloud (Qwen): free use, including commercial, keeping the licence notice. The ONNX files are published by onnx-community on Hugging Face and the site uses them at a pinned version.' },
+        { h: 'License', p: 'Apache 2.0 by Alibaba Cloud (Qwen): free use, including commercial, keeping the licence notice. The ONNX conversion is by onnx-community; the site downloads it, at a pinned version, from a copy in our own Hugging Face account.' },
       ],
       cta: { text: 'Chat with Qwen3.5 4B', href: '/en/app/?model=qwen3.5-4b' },
       faq: [
