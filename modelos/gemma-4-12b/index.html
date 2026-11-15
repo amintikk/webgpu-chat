@@ -45,7 +45,7 @@
         </section>
         <section data-reveal>
           <h2>Pesos QAT y atención fusionada</h2>
-          <p>Usamos la versión QAT de Google (gemma-4-12B-it-qat-q4_0), entrenada para funcionar a 4 bits, por lo que pierde menos calidad que una cuantización directa. La conversión a ONNX es de la comunidad (james58899/gemma-4-12B-it-qat-ONNX) y usa atención fusionada (GroupQueryAttention), con menos de la mitad de operaciones que nuestra exportación anterior; nosotros solo activamos en su grafo el cálculo en enteros para leer el prompt más rápido. Nuestra exportación propia, validada frente al original, sigue publicada en <a href="https://huggingface.co/AMINOXDEV/gemma-4-12B-it-ONNX" rel="noopener">Hugging Face</a>.</p>
+          <p>Usamos la versión QAT de Google (gemma-4-12B-it-qat-q4_0), entrenada para funcionar a 4 bits, por lo que pierde menos calidad que una cuantización directa. La conversión a ONNX es de la comunidad (james58899/gemma-4-12B-it-qat-ONNX) y usa atención fusionada (GroupQueryAttention), que en WebGPU es mucho más rápida; nosotros solo activamos en su grafo el cálculo en enteros para leer el prompt más rápido.</p>
         </section>
         <section data-reveal>
           <h2>Sus límites</h2>

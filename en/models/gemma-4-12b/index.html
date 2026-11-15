@@ -45,7 +45,7 @@
         </section>
         <section data-reveal>
           <h2>QAT weights and fused attention</h2>
-          <p>We use Google’s QAT version (gemma-4-12B-it-qat-q4_0), trained to run at 4 bits, so it loses less quality than plain quantization. The ONNX conversion comes from the community (james58899/gemma-4-12B-it-qat-ONNX) and uses fused attention (GroupQueryAttention), with less than half the operations of our earlier export; we only switch on integer math in its graph so prompts are read faster. Our own export, validated against the original, is still published on <a href="https://huggingface.co/AMINOXDEV/gemma-4-12B-it-ONNX" rel="noopener">Hugging Face</a>.</p>
+          <p>We use Google’s QAT version (gemma-4-12B-it-qat-q4_0), trained to run at 4 bits, so it loses less quality than plain quantization. The ONNX conversion comes from the community (james58899/gemma-4-12B-it-qat-ONNX) and uses fused attention (GroupQueryAttention), which is much faster on WebGPU; we only switch on integer math in its graph so prompts are read faster.</p>
         </section>
         <section data-reveal>
           <h2>Its limits</h2>
