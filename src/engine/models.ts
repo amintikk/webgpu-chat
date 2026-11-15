@@ -157,7 +157,9 @@ export const MODELS: ModelInfo[] = [
       { path: 'tokenizer_config.json', bytes: 22_222 },
       { path: 'onnx/embed_tokens_q4f16.onnx', bytes: 585 },
       { path: 'onnx/embed_tokens_q4f16.onnx_data', bytes: 566_231_040 },
-      { path: 'onnx/decoder_model_merged_q4f16.onnx', bytes: 455_338 },
+      // Same graph with an If per attention layer: a masked attention when a picture is read (both directions
+      // inside each picture, as Gemma 4 does), the fused GQA otherwise. Weights unchanged (tools/gemma4/bidir.py).
+      { path: 'onnx/decoder_model_merged_q4f16.onnx', bytes: 571_104, src: { repo: 'AMINOXDEV/gemma-4-12B-it-qat-ONNX', revision: '4720d58a2adc8f9e8d17e0bbabbfa3917a5ea82b', path: 'onnx/decoder_model_merged_q4f16_vision.onnx' } },
       { path: 'onnx/decoder_model_merged_q4f16.onnx_data', bytes: 1_997_070_336 },
       { path: 'onnx/decoder_model_merged_q4f16.onnx_data_1', bytes: 1_988_599_296 },
       { path: 'onnx/decoder_model_merged_q4f16.onnx_data_2', bytes: 1_977_876_480 },
@@ -168,9 +170,15 @@ export const MODELS: ModelInfo[] = [
       formats: { 'embed_tokens_q4f16.onnx': 1, 'decoder_model_merged_q4f16.onnx': 0 },
       files: ['decoder_model_merged_q4f16.onnx_data', 'decoder_model_merged_q4f16.onnx_data_1', 'decoder_model_merged_q4f16.onnx_data_2', 'decoder_model_merged_q4f16.onnx_data_3', 'embed_tokens_q4f16.onnx_data'],
     },
-    // No pictures: Gemma 4 12B reads them inside the language model ("unified", no vision tower), with attention
-    // in both directions between a picture's patches. This fused graph only attends backwards, so every picture
-    // reached the model scrambled. The fp16 patch projection stays in our repository for when that changes.
+    // Gemma 4 12B sees pictures as 48×48-pixel patches projected straight into the language model ("unified"),
+    // which reads each picture's patches with attention in both directions: the worker passes that mask to the
+    // graph's masked branch while a picture is read. The projection is the ONNX Runtime team's fp16 export.
+    vision: {
+      kind: 'gemma',
+      graph: { path: 'onnx/vision_encoder_fp16.onnx', bytes: 19_002 },
+      data: { path: 'onnx/vision_encoder_fp16.onnx.data', bytes: 100_007_936, name: 'model.onnx.data' },
+      processor: { patch_size: 48, pooling_kernel_size: 1, max_soft_tokens: 280, resample: 3, do_rescale: true, rescale_factor: 1 / 255, do_resize: true, do_convert_rgb: true },
+    },
     largestBuffer: 503_316_480,
     gpuMemory: 8.7e9, // 6.8 GB weights + KV cache at 4096 tokens (sliding layers keep their full cache here)
     context: 4096,

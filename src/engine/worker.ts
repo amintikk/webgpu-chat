@@ -340,6 +340,8 @@ async function load(id: string, dtypeOverride?: string, device = 'webgpu', profi
       return inputs;
     };
   info = m;
+  pictureBlocks = null;
+  if (m.vision?.kind === 'gemma') maskedAttention(model.sessions.decoder_model_merged);
   // One short forward pass compiles the GPU kernels now rather than on the first message.
   post({ type: 'status', stage: 'warmup' });
   const ids = tokenizer.apply_chat_template([{ role: 'user', content: 'Hi' }], { add_generation_prompt: true, return_dict: true });
@@ -516,6 +518,8 @@ async function generate(id: number, messages: ChatMessage[], o: GenOptions) {
   // Transformers.js reads pictures only in a pass that starts from the beginning: a turn that adds a picture
   // is read again from the start (later turns reuse the cache as usual).
   const readsPictures = pictures.length > 0 && full.slice(base?.tokens.length ?? 0).includes(imageToken);
+  // Gemma: the graph's masked attention, with both directions inside each picture, for the pass that reads them.
+  pictureBlocks = readsPictures && m.vision?.kind === 'gemma' ? pictureBlocksOf(full, imageToken) : null;
   if (readsPictures) {
     base = null;
     await ensureVision(id);
@@ -643,6 +647,63 @@ async function generate(id: number, messages: ChatMessage[], o: GenOptions) {
   if (profiling) reportProfile();
 }
 
+// ---------------------------------------------------------------------------------------------
+// Gemma 4 pictures: two-way attention inside each picture.
+//
+// Gemma 4 12B reads a picture's patches inside the language model and lets them attend to each other in both
+// directions. Its graph (tools/gemma4/bidir.py) has, per attention layer, If(use_bias): a masked attention fed
+// with the masks built here, or the fused causal GQA. The extra inputs are hidden from Transformers.js (which
+// does not know them) and added to every run of the decoder: the mask only for a pass that starts from the
+// beginning and reads pictures; every other step runs the fused attention.
+
+/** Picture block of each prompt position (-1 for text) for the pass that reads pictures, else null. */
+let pictureBlocks: Int32Array | null = null;
+const LOCAL_WINDOW = 1024; // sliding window of Gemma 4's local layers
+const F16_ZERO = 0x0000;
+const F16_MIN = 0xfbff; // -65504: masked
+
+function pictureBlocksOf(ids: number[], imageToken: number): Int32Array {
+  const out = new Int32Array(ids.length).fill(-1);
+  let block = -1;
+  for (let i = 0; i < ids.length; i++) {
+    if (ids[i] === imageToken) {
+      if (i === 0 || ids[i - 1] !== imageToken) block++;
+      out[i] = block;
+    }
+  }
+  return out;
+}
+
+function maskedAttention(session: Any) {
+  const extra = ['use_bias', 'attention_bias_global', 'attention_bias_local'];
+  const names: string[] = session?.inputNames ?? [];
+  if (!extra.every((n) => names.includes(n))) return;
+  Object.defineProperty(session, 'inputNames', { value: names.filter((n) => !extra.includes(n)), configurable: true });
+  const run = session.run.bind(session);
+  session.run = (feeds: Any, ...rest: Any[]) => {
+    const Tensor = feeds.attention_mask.constructor;
+    const S = Number(feeds.inputs_embeds?.dims?.[1] ?? 1);
+    const T = Number(feeds.attention_mask.dims[1]);
+    const blocks = pictureBlocks;
+    if (blocks && S > 1 && S === T && S <= blocks.length && blocks.subarray(0, S).some((b) => b >= 0)) {
+      const global = new Uint16Array(S * S);
+      const local = new Uint16Array(S * S);
+      for (let i = 0; i < S; i++) {
+        const bi = blocks[i]!;
+        for (let j = 0; j < S; j++) {
+          const sameBlock = bi >= 0 && blocks[j] === bi;
+          const causal = j <= i;
+          global[i * S + j] = causal || sameBlock ? F16_ZERO : F16_MIN;
+          local[i * S + j] = (causal && i - j < LOCAL_WINDOW) || sameBlock ? F16_ZERO : F16_MIN;
+        }
+      }
+      return run({ ...feeds, use_bias: new Tensor('bool', new Uint8Array([1]), []), attention_bias_global: new Tensor('float16', global, [1, 1, S, S]), attention_bias_local: new Tensor('float16', local, [1, 1, S, S]) }, ...rest);
+    }
+    const none = new Tensor('float16', new Uint16Array(1), [1, 1, 1, 1]);
+    return run({ ...feeds, use_bias: new Tensor('bool', new Uint8Array([0]), []), attention_bias_global: none, attention_bias_local: none }, ...rest);
+  };
+}
+
 /** Set when the model was loaded with ONNX Runtime's profiler on: the first answer ends it and reports. */
 let profiling = false;
 function reportProfile() {
@@ -694,6 +755,7 @@ async function validateChunkedPrefill() {
 /** Two warmed runs per mode; comparison is end-to-end, not an isolated sampler microbenchmark. */
 async function bench(id: number, compare = false, profile = false) {
   if (!model) throw new Error('No model loaded');
+  pictureBlocks = null;
   await resetCaches();
   stopper.reset();
   const ids = template([{ role: 'user', content: 'Write a detailed paragraph about the history of the Internet.' }], true, false);
