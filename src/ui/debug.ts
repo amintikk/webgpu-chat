@@ -157,6 +157,8 @@ export async function reportText(extra: string[] = []): Promise<string> {
       const i = gpu.info ?? ({} as GPUAdapterInfo);
       out.push(`GPU: ${i.vendor || 'n/d'} ${i.architecture || ''} ${i.description || ''}`.trim());
       out.push(`GPU: shader-f16 ${gpu.features.has('shader-f16') ? 'sí' : 'no'} · maxBufferSize ${fmtBig(gpu.limits.maxBufferSize)} · maxStorageBufferBindingSize ${fmtBig(gpu.limits.maxStorageBufferBindingSize)} · maxComputeWorkgroupStorageSize ${gpu.limits.maxComputeWorkgroupStorageSize}`);
+      // Which fast paths ONNX Runtime can use: subgroups (int8 DP4A matmuls), timestamp-query (GPU profile), etc.
+      out.push(`GPU funciones: ${[...gpu.features].sort().join(', ') || 'ninguna'}`);
     }
   } catch (e) {
     out.push(`WebGPU: error al pedir el adaptador: ${e instanceof Error ? e.message : String(e)}`);
