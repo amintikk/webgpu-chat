@@ -76,7 +76,7 @@ const pinnedFetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
         const hit = await cache.match(pinned);
         if (hit) return hit;
       }
-      const job = downloadToCache(cache, pinned, m[3]!, init);
+      const job = downloadToCache(cache, pinned, m[3]!, init, sourceUrl(model, m[3]!));
       inFlight.set(pinned, job);
       const stored = await job.finally(() => inFlight.delete(pinned));
       if (stored) return stored;
@@ -142,9 +142,10 @@ let onNetProgress: ((file: string, loaded: number, total: number) => void) | nul
  * in the cache, which on phones is enough for the system to kill the tab. Returns null on failure (e.g. no
  * space), and the caller downloads it the usual way.
  */
-async function downloadToCache(cache: Cache, url: string, file: string, init?: RequestInit): Promise<Response | null> {
+async function downloadToCache(cache: Cache, url: string, file: string, init?: RequestInit, from = url): Promise<Response | null> {
   try {
-    const res = await realFetch(url, init);
+    // Downloaded from the file's source (`src` in models.ts), stored under the model's own address.
+    const res = await realFetch(from, init);
     if (!res.ok) return res;
     const total = Number(res.headers.get('content-length')) || 0;
     dbg(`${file}: descarga a la caché en streaming (${(total / 1e6).toFixed(0)} MB)`);
