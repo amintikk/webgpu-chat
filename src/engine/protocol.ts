@@ -51,7 +51,7 @@ export interface BenchResult {
 }
 
 export type ToWorker =
-  | { type: 'load'; model: ModelId; lang: 'es' | 'en'; dtype?: string; /** Tests only (Node): 'cpu'. */ device?: string }
+  | { type: 'load'; model: ModelId; lang: 'es' | 'en'; dtype?: string; /** Tests only (Node): 'cpu'. */ device?: string; /** ONNX Runtime's profiler on; the first answer reports it. */ profile?: boolean }
   | { type: 'generate'; id: number; messages: ChatMessage[]; options: GenOptions }
   | { type: 'count'; id: number; messages: ChatMessage[]; reasoning: boolean }
   | { type: 'bench'; id: number; compare?: boolean; profile?: boolean }

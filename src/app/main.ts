@@ -554,7 +554,7 @@ function takeCrashedLoad(): ModelInfo | null {
   }
 }
 
-async function loadModel(id: ModelId) {
+async function loadModel(id: ModelId, profile = false) {
   const m = modelById(id);
   if (!m || loading?.model === id) return;
   try {
@@ -593,7 +593,7 @@ async function loadModel(id: ModelId) {
         if (s !== 'download') setAuroraProgress(1);
         renderLoad();
       },
-    }, DEV_Q4 ? 'q4' : undefined);
+    }, DEV_Q4 ? 'q4' : undefined, profile);
     loading = null;
     markLoading(null);
     dlog(`CARGADO en ${fmtDuration(performance.now() - t0)} · ${memoryText()}`);
@@ -1125,6 +1125,7 @@ function debugBlock(): HTMLElement {
     h('button', { type: 'button', class: 'btn small', onclick: () => void showDebugReport() }, icon('code', 15), t('Ver informe')),
     h('button', { type: 'button', class: 'btn small ghost', onclick: () => void copyDebugReport() }, icon('copy', 15), t('Copiar informe')),
     h('button', { type: 'button', class: 'btn small ghost', onclick: () => (clearDebug(), toast(t('Registro borrado.'))) }, t('Borrar registro')),
+    h('button', { type: 'button', class: 'btn small ghost', onclick: () => void profileGpu() }, t('Medir la GPU')),
   );
   return h(
     'div',
@@ -1133,6 +1134,19 @@ function debugBlock(): HTMLElement {
     h('p', { class: 'hint' }, t('Anota cada paso de la carga del modelo (descarga, caché, memoria, errores) en esta página. No se envía nada: copia el informe y pásalo a quien te ayude.')),
     view,
   );
+}
+
+/**
+ * Loads the current model again with ONNX Runtime's profiler on. The next answer is slower (every GPU kernel is
+ * timed) and its summary goes to the record: which operators run where and how long each kernel takes.
+ */
+async function profileGpu() {
+  const id = engine.loaded ?? settings.model;
+  if (!id || loading) return toast(t('Carga un modelo primero.'));
+  dlog('medir la GPU: se vuelve a cargar el modelo con el perfilador de ONNX Runtime');
+  engine.restart();
+  await loadModel(id, true);
+  if (engine.loaded === id) toast(t('Envía un mensaje: al terminar, la medición queda en el informe.'));
 }
 
 async function copyDebugReport() {

@@ -131,11 +131,11 @@ export class Engine {
     }
   }
 
-  load(model: ModelId, ev: LoadEvents = {}, dtype?: string): Promise<number> {
+  load(model: ModelId, ev: LoadEvents = {}, dtype?: string, profile = false): Promise<number> {
     this.loadWaiter?.reject(new Error('superseded'));
     return new Promise((resolve, reject) => {
       this.loadWaiter = { resolve, reject, ev };
-      this.send({ type: 'load', model, lang, dtype });
+      this.send({ type: 'load', model, lang, dtype, profile });
     });
   }
 

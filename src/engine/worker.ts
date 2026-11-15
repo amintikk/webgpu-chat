@@ -2,6 +2,7 @@
 // Inference worker: Transformers.js v4 on WebGPU. The page never touches the model; it sends chat
 // messages and receives text deltas. Nothing here talks to any server other than the Hugging Face
 // file downloads (pinned revisions), which Transformers.js keeps in Cache Storage.
+import { tapConsole } from './console-tap.ts'; // first: ONNX Runtime must bind the wrapped console.log
 import {
   AutoTokenizer,
   BaseStreamer,
@@ -16,7 +17,7 @@ import {
 } from '@huggingface/transformers';
 import { MODELS, fileUrl, modelById, sourceUrl, type ModelInfo } from './models.ts';
 import type { ChatMessage, FromWorker, GenOptions, ToWorker } from './protocol.ts';
-import { GpuProfile } from './profiling.ts';
+import { GpuProfile, OrtProfile } from './profiling.ts';
 import { splitReasoning } from './reasoning.ts';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -254,7 +255,7 @@ async function resetCaches() {
 
 // ---------------------------------------------------------------------------------------------
 
-async function load(id: string, dtypeOverride?: string, device = 'webgpu') {
+async function load(id: string, dtypeOverride?: string, device = 'webgpu', profile = false) {
   const m = modelById(id);
   if (!m) throw new Error(`Unknown model ${id}`);
   if (info?.id === m.id && model) {
@@ -305,6 +306,8 @@ async function load(id: string, dtypeOverride?: string, device = 'webgpu') {
     // Tests in Node run on the CPU: skip weight prepacking and the memory arena so a 12B model fits in less RAM.
     const session_options: Any = device === 'cpu' ? { enableCpuMemArena: false, extra: { session: { disable_prepacking: '1' } } } : {};
     const shared = m.sharedData ? { use_external_data_format: m.sharedData.formats } : {};
+    if (profile) session_options.enableProfiling = true;
+    profiling = profile;
     if (m.sharedData) session_options.externalData = m.sharedData.files.map((f) => ({ path: f, data: `onnx/${f}` }));
     model = await cls.from_pretrained(m.repo, { ...opts, dtype, device, ...shared, session_options });
   } catch (e) {
@@ -547,6 +550,25 @@ async function generate(id: number, messages: ChatMessage[], o: GenOptions) {
       stopped: stopper.interrupted ? 'user' : eos.has(gen.at(-1) ?? -1) ? 'eos' : 'length',
     },
   });
+  if (profiling) reportProfile();
+}
+
+/** Set when the model was loaded with ONNX Runtime's profiler on: the first answer ends it and reports. */
+let profiling = false;
+function reportProfile() {
+  profiling = false;
+  for (const [name, session] of Object.entries((model?.sessions ?? {}) as Record<string, Any>)) {
+    const p = new OrtProfile();
+    tapConsole((line) => p.line(line));
+    try {
+      session.endProfiling?.();
+    } catch (e) {
+      dbg(`perfil ${name}: ${errText(e)}`);
+    } finally {
+      tapConsole(null);
+    }
+    dbg(p.summary(name).join('\n'));
+  }
 }
 
 /** Test equivalence in this model/device session before allowing experimental chunked prefill. */
@@ -648,7 +670,7 @@ self.onmessage = (e: MessageEvent<ToWorker>) => {
     try {
       if (msg.type === 'load') {
         specialCache = null;
-        await load(msg.model, msg.dtype, msg.device);
+        await load(msg.model, msg.dtype, msg.device, msg.profile);
       } else if (msg.type === 'generate') {
         await generate(msg.id, msg.messages, msg.options);
       } else if (msg.type === 'bench') {
