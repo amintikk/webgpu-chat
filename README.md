@@ -15,7 +15,7 @@ las conversaciones se guardan en IndexedDB. Nada de lo que escribes sale de tu e
 | Nivel | Modelo | Archivos (q4f16) | Descarga | Licencia |
 |---|---|---|---|---|
 | Ligero | LFM3 1.7B (Liquid AI) | [onnx-community/LFM3-1.7B-ONNX@ab9fec4](https://huggingface.co/onnx-community/LFM3-1.7B-ONNX/tree/ab9fec4c681a25bec3b48b0b97a62fc2660a2985) | 1,11 GB | [LFM Open License v1.0](licenses/LFM-Open-License-v1.0.txt) |
-| Recomendado | Qwen3.5 4B (Qwen) | [onnx-community/Qwen3.5-4B-ONNX@23ac335](https://huggingface.co/onnx-community/Qwen3.5-4B-ONNX/tree/23ac3352f288351eddcdf141b32f4f66587f7e2d), solo texto | 2,82 GB | Apache 2.0 |
+| Recomendado | Qwen3.5 4B (Qwen) | [onnx-community/Qwen3.5-4B-ONNX-OPT@bb07226](https://huggingface.co/onnx-community/Qwen3.5-4B-ONNX-OPT/tree/bb072268d0912bdc5cf4f41c8c6f53a03fd68624) (exportación optimizada: atención lineal fusionada, sin bucles en la CPU), solo texto | 2,82 GB | Apache 2.0 |
 | Máximo | Gemma 4 12B (Google) | exportación propia: [AMINOXDEV/gemma-4-12B-it-ONNX@90e0a27](https://huggingface.co/AMINOXDEV/gemma-4-12B-it-ONNX/tree/90e0a27bf539717b6055d7e434b9faa1f0dbd9ff) ([tools/gemma4](tools/gemma4/)) | 7,54 GB | Apache 2.0 |
 
 La selección de modelos, las fichas (qué hacen bien, límites, equipo) y las licencias están en

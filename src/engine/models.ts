@@ -66,8 +66,11 @@ export const MODELS: ModelInfo[] = [
     id: 'qwen3.5-4b',
     name: 'Qwen3.5 4B',
     tier: 'recommended',
-    repo: 'onnx-community/Qwen3.5-4B-ONNX',
-    revision: '23ac3352f288351eddcdf141b32f4f66587f7e2d',
+    // The -OPT export fuses the linear-attention layers (LinearAttention, CausalConvWithState) and computes logits
+    // only for the last position. The original repo ran each prompt position in a loop driven by the CPU (Scan inside
+    // If), which WebGPU cannot run on its own: about 14 s before the first word for a short prompt.
+    repo: 'onnx-community/Qwen3.5-4B-ONNX-OPT',
+    revision: 'bb072268d0912bdc5cf4f41c8c6f53a03fd68624',
     cls: 'Qwen3_5ForCausalLM',
     dtype: { embed_tokens: 'q4f16', decoder_model_merged: 'q4f16' },
     files: [
@@ -77,8 +80,8 @@ export const MODELS: ModelInfo[] = [
       { path: 'tokenizer_config.json', bytes: 10_070 },
       { path: 'onnx/embed_tokens_q4f16.onnx', bytes: 1_064 },
       { path: 'onnx/embed_tokens_q4f16.onnx_data', bytes: 367_513_600 },
-      { path: 'onnx/decoder_model_merged_q4f16.onnx', bytes: 1_421_099 },
-      { path: 'onnx/decoder_model_merged_q4f16.onnx_data', bytes: 2_067_208_192 },
+      { path: 'onnx/decoder_model_merged_q4f16.onnx', bytes: 933_554 },
+      { path: 'onnx/decoder_model_merged_q4f16.onnx_data', bytes: 2_065_635_328 },
       { path: 'onnx/decoder_model_merged_q4f16.onnx_data_1', bytes: 367_513_600 },
     ],
     largestBuffer: 317_849_600,
