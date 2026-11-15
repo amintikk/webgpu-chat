@@ -697,6 +697,8 @@ function maskedAttention(session: Any) {
           local[i * S + j] = (causal && i - j < LOCAL_WINDOW) || sameBlock ? F16_ZERO : F16_MIN;
         }
       }
+      const pictures = new Set(Array.from(blocks.subarray(0, S)).filter((x) => x >= 0)).size;
+      dbg(`atención en ambos sentidos dentro de ${pictures} ${pictures === 1 ? 'imagen' : 'imágenes'} (${S} tokens en esta pasada)`);
       return run({ ...feeds, use_bias: new Tensor('bool', new Uint8Array([1]), []), attention_bias_global: new Tensor('float16', global, [1, 1, S, S]), attention_bias_local: new Tensor('float16', local, [1, 1, S, S]) }, ...rest);
     }
     const none = new Tensor('float16', new Uint16Array(1), [1, 1, 1, 1]);
