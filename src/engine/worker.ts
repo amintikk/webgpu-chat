@@ -102,7 +102,15 @@ async function downloadToCache(cache: Cache, url: string, file: string, init?: R
       }),
     );
     const headers = new Headers(res.headers);
-    await cache.put(url, new Response(counted, { status: 200, headers }));
+    try {
+      await cache.put(url, new Response(counted, { status: 200, headers }));
+    } catch (e) {
+      // The browser could not store the file (almost always: no free disk space). Downloading it into memory
+      // instead would need gigabytes of RAM in the tab and crash it, so stop with a clear error.
+      await cache.delete(url).catch(() => {});
+      dbg(`${file}: no se pudo guardar en la caché: ${e instanceof Error ? `${e.name}: ${e.message}` : String(e)}`);
+      throw new Error(`STORAGE_FULL ${file} (${(total / 1e9).toFixed(2)} GB): ${e instanceof Error ? e.message : String(e)}`);
+    }
     if (loaded !== total) {
       // Cut short: never leave a partial file in the cache.
       await cache.delete(url);
@@ -110,6 +118,7 @@ async function downloadToCache(cache: Cache, url: string, file: string, init?: R
     }
     return (await cache.match(url)) ?? null;
   } catch (e) {
+    if (e instanceof Error && e.message.startsWith('STORAGE_FULL')) throw e;
     console.warn('[worker] streaming to the cache failed, downloading in memory:', file, e);
     dbg(`${file}: el streaming falló, se descarga en memoria: ${e instanceof Error ? `${e.name}: ${e.message}` : String(e)}`);
     return null;

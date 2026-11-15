@@ -622,6 +622,11 @@ async function loadModel(id: ModelId) {
 function loadErrorText(msg: string, m: ModelInfo): string {
   // The browser could not reserve memory for the weights in the page (not the GPU's own memory): "Array buffer
   // allocation failed" and similar. Says so, instead of blaming the GPU.
+  if (msg.includes('STORAGE_FULL'))
+    return (
+      t('No se ha podido guardar {m} en el disco: lo más probable es que falte espacio libre (necesita unos {s}). Libera espacio y vuelve a intentarlo; lo ya descargado se conserva.', { m: m.name, s: fmtBytes(downloadBytes(m)) }) +
+      ` (${msg})`
+    );
   if (/array buffer|allocation failed|ArrayBuffer|RangeError|Invalid array length/i.test(msg))
     return (
       t('El navegador no ha podido reservar memoria para cargar {m} (sus pesos ocupan unos {s} en el navegador). Cierra otras pestañas y aplicaciones y vuelve a intentarlo. Si sigue igual, prueba LFM3 1.7B, que es mucho más ligero.', { m: m.name, s: fmtBytes(downloadBytes(m)) }) +
