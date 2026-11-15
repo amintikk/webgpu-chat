@@ -1152,6 +1152,7 @@ async function profileGpu() {
 
 async function matmulBench() {
   toast(t('Midiendo… (unos segundos)'));
+  dlog('medir multiplicaciones: pulsado');
   try {
     await engine.matmulBench();
     toast(t('Hecho: copia el informe.'));

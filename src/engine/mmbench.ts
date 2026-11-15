@@ -10,6 +10,7 @@ const MS = [1, 2, 3, 4, 5, 6, 8, 12, 16, 32];
 
 export async function matmulBench(log: (line: string) => void): Promise<void> {
   const rows: string[] = [];
+  log('medir multiplicaciones: inicio');
   for (const acc of [0, 4]) {
     const session = await ort.InferenceSession.create(`/bench/matmul4-acc${acc}.onnx`, {
       executionProviders: ['webgpu'],
@@ -43,8 +44,10 @@ export async function matmulBench(log: (line: string) => void): Promise<void> {
       await run(12);
       const ms = (performance.now() - t0) / 12;
       cells.push(`M=${M}: ${ms.toFixed(2)} ms`);
+      if (M === 1) log(`medir multiplicaciones: acc ${acc} M=1 ${ms.toFixed(2)} ms`);
     }
     rows.push(`accuracy_level ${acc}: ${cells.join(' · ')}`);
+    log(`medir multiplicaciones: ${rows.at(-1)}`);
     B.dispose();
     S.dispose();
     bBuf.destroy();
