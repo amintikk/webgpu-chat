@@ -7,14 +7,15 @@ import { AVAILABLE, MODELS, downloadBytes, modelById, type ModelId, type ModelIn
 import type { ChatMessage, GenOptions, GenStats } from '../engine/protocol.ts';
 import { lang, locale, localPath, t } from '../i18n.ts';
 import { $, fmtBytes, fmtDuration, fmtNum, h, toast } from '../ui/dom.ts';
-import { mountAurora, pulseAurora, setAuroraProgress, setMood, wireGlow } from '../ui/aurora.ts';
+import { holdAurora, mountAurora, pulseAurora, setAuroraProgress, setMood, wireGlow } from '../ui/aurora.ts';
 import { hydrateIcons, icon } from '../ui/icons.ts';
 import { cacheStatus, deleteModel, deleteOrphans, isComplete, orphanBytes, storageEstimate, type CacheEntry } from './cache.ts';
-import { deleteConversation, listConversations, newId, saveConversation, titleFrom, type Conversation, type StoredImage, type StoredMessage } from './db.ts';
+import { clearConversations, deleteConversation, listConversations, newId, saveConversation, titleFrom, type Conversation, type StoredImage, type StoredMessage } from './db.ts';
 import { card, tierLabel } from './modelcards.ts';
 import { level, score, wait, type Level, type Wait } from './score.ts';
 import { copyButton, renderMarkdown } from './render.ts';
-import { speakButton } from './speak.ts';
+import { canSpeak, localVoices, speakButton, speakSample, voicePrefs } from './speak.ts';
+import { exportBackup, readBackup } from './backup.ts';
 import { ACCEPT, isImageFile, readAttachment, readImage, withAttachments, type Attachment } from './attach.ts';
 import { applyUrlDebug, clearDebug, debugOn, dlog, memoryText, reportText, setDebug, startMemoryWatch, stopMemoryWatch, watchErrors } from '../ui/debug.ts';
 
@@ -26,6 +27,9 @@ interface ModelSettings {
   topP: number;
   maxTokens: number;
   reasoning: boolean;
+  /** Advanced; the model authors' values when unset. */
+  topK?: number;
+  repetitionPenalty?: number;
 }
 interface Settings {
   theme: 'auto' | 'light' | 'dark';
@@ -33,10 +37,19 @@ interface Settings {
   system: string;
   perModel: Partial<Record<ModelId, ModelSettings>>;
   panel: boolean;
+  /** Text size in the conversation. */
+  textSize: 'sm' | 'md' | 'lg';
+  /** The background light moves (off: it stays still, which also leaves the GPU to the model). */
+  motion: boolean;
+  /** Enter sends (Shift+Enter: new line). Off: Ctrl/⌘+Enter sends and Enter adds a line. */
+  enterSends: boolean;
+  /** Read aloud: a local voice (its voiceURI, '' = the system's default for the language) and its speed. */
+  voice: string;
+  rate: number;
 }
 const KEY = 'webgpu-chat-settings';
 const settings: Settings = (() => {
-  const d: Settings = { theme: 'auto', model: null, system: '', perModel: {}, panel: false };
+  const d: Settings = { theme: 'auto', model: null, system: '', perModel: {}, panel: false, textSize: 'md', motion: true, enterSends: true, voice: '', rate: 1 };
   try {
     return { ...d, ...JSON.parse(localStorage.getItem(KEY) ?? '{}') };
   } catch {
@@ -743,7 +756,7 @@ function renderComposerState() {
 
 function genOptions(m: ModelInfo): GenOptions {
   const s = ms(m);
-  return { temperature: s.temperature, topP: s.topP, topK: m.defaults.topK, repetitionPenalty: m.defaults.repetitionPenalty, maxTokens: s.maxTokens, reasoning: s.reasoning };
+  return { temperature: s.temperature, topP: s.topP, topK: s.topK ?? m.defaults.topK, repetitionPenalty: s.repetitionPenalty ?? m.defaults.repetitionPenalty, maxTokens: s.maxTokens, reasoning: s.reasoning };
 }
 
 function toChat(msgs: StoredMessage[], model: ModelInfo | null = selected): ChatMessage[] {
@@ -1001,7 +1014,8 @@ el.input.addEventListener('input', () => {
 });
 el.input.addEventListener('blur', () => restMood());
 el.input.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
+  const sends = settings.enterSends ? !e.shiftKey && !e.ctrlKey && !e.metaKey : e.ctrlKey || e.metaKey;
+  if (e.key === 'Enter' && sends && !e.isComposing) {
     e.preventDefault();
     void send();
   }
@@ -1124,49 +1138,266 @@ function slider(label: string, min: number, max: number, step: number, value: nu
   return h('div', { class: 'field' }, h('div', { class: 'field-row' }, h('label', {}, label), out), input, h('p', { class: 'hint' }, hint));
 }
 
+/** A collapsible card in the settings panel; open/closed is remembered per section. */
+function section(id: string, iconName: Parameters<typeof icon>[0], title: string, ...children: (Node | null)[]): HTMLElement {
+  const d = h('details', { class: 'set-sec', 'data-sec': id }) as HTMLDetailsElement;
+  d.open = !closedSections.has(id);
+  d.addEventListener('toggle', () => {
+    if (d.open) closedSections.delete(id);
+    else closedSections.add(id);
+    try {
+      localStorage.setItem(SECTIONS_KEY, JSON.stringify([...closedSections]));
+    } catch {
+      /* not remembered */
+    }
+  });
+  d.append(h('summary', {}, h('span', { class: 'set-ico' }, icon(iconName, 16)), h('span', { class: 'set-title' }, title), icon('chevronDown', 15)), h('div', { class: 'set-body' }, ...children));
+  return d;
+}
+const SECTIONS_KEY = 'webgpu-chat:settings-closed';
+const closedSections = new Set<string>(
+  (() => {
+    try {
+      return JSON.parse(localStorage.getItem(SECTIONS_KEY) ?? '["debug"]') as string[];
+    } catch {
+      return ['debug'];
+    }
+  })(),
+);
+
+/** A row of mutually exclusive choices (theme, text size). */
+function segmented<T extends string>(label: string, options: [T, string][], value: T, on: (v: T) => void): HTMLElement {
+  const group = h('div', { class: 'seg', role: 'radiogroup', 'aria-label': label });
+  for (const [v, text] of options) {
+    const b = h('button', { type: 'button', role: 'radio', 'aria-checked': String(v === value) }, text);
+    b.addEventListener('click', () => {
+      group.querySelectorAll('button').forEach((x) => x.setAttribute('aria-checked', String(x === b)));
+      on(v);
+      saveSettings();
+    });
+    group.append(b);
+  }
+  return h('div', { class: 'field' }, h('label', {}, label), group);
+}
+
+/** A labelled on/off switch. */
+function toggle(label: string, value: boolean, on: (v: boolean) => void, hint: string): HTMLElement {
+  const sw = h('button', { type: 'button', class: `switch${value ? ' on' : ''}`, role: 'switch', 'aria-checked': String(value), 'aria-label': label }, h('i'));
+  sw.addEventListener('click', () => {
+    const v = sw.getAttribute('aria-checked') !== 'true';
+    sw.classList.toggle('on', v);
+    sw.setAttribute('aria-checked', String(v));
+    on(v);
+    saveSettings();
+  });
+  return h('div', { class: 'field' }, h('div', { class: 'field-row' }, h('label', {}, label), sw), h('p', { class: 'hint' }, hint));
+}
+
+/** Text size, motion and voice: applied at start-up and whenever they change. */
+function applyPrefs() {
+  document.documentElement.dataset.text = settings.textSize;
+  holdAurora(!settings.motion);
+  voicePrefs.voice = settings.voice;
+  voicePrefs.rate = settings.rate;
+}
+
+const PRESETS: [string, string][] = [
+  ['Breve', 'Responde de forma breve y directa, sin rodeos.'],
+  ['Detallado', 'Responde con detalle, paso a paso y con ejemplos cuando ayuden.'],
+  ['Profesor', 'Actúa como un profesor paciente: explica con palabras sencillas y comprueba que se entiende.'],
+  ['Programador', 'Eres un programador experto. Da código correcto y comentado, y explica brevemente las decisiones.'],
+  ['Corrector', 'Corrige la ortografía, la gramática y el estilo del texto que te dé, y explica los cambios importantes.'],
+  ['Traductor', 'Traduce el texto que te dé al español (o al inglés si ya está en español), manteniendo el tono.'],
+];
+
 function renderSettings() {
   const body = $('settings-body');
+  const scroll = body.scrollTop;
   body.replaceChildren();
-  const sys = h('textarea', { rows: 4, value: settings.system, placeholder: t('Por ejemplo: «Responde siempre en español y de forma breve».'), 'aria-label': t('Prompt de sistema') });
-  sys.addEventListener('input', () => {
-    settings.system = sys.value;
+  const dec = (v: number) => v.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+  // Model -------------------------------------------------------------------------------------
+  if (selected) {
+    const m = selected;
+    const s = ms(m);
+    const tog = h('button', { type: 'button', class: `switch${s.reasoning ? ' on' : ''}`, role: 'switch', 'aria-checked': String(s.reasoning), 'aria-label': t('Razonamiento') }, h('i'));
+    tog.addEventListener('click', () => el.reasoningChip.click());
+    const advanced = h(
+      'details',
+      { class: 'set-adv' },
+      h('summary', {}, t('Avanzado'), icon('chevronDown', 14)),
+      slider(t('Top-k'), 1, 100, 1, s.topK ?? m.defaults.topK, (v) => fmtNum(v), (v) => (s.topK = v), t('Solo se elige entre estas palabras más probables. Valor del modelo: {v}.', { v: fmtNum(m.defaults.topK) })),
+      slider(t('Penalización por repetición'), 1, 1.5, 0.01, s.repetitionPenalty ?? m.defaults.repetitionPenalty, dec, (v) => (s.repetitionPenalty = v), t('Por encima de 1 evita que repita palabras y frases; demasiado alta empeora las respuestas. Valor del modelo: {v}.', { v: dec(m.defaults.repetitionPenalty) })),
+    );
+    body.append(
+      section(
+        'model',
+        'cpu',
+        m.name,
+        h('p', { class: 'hint set-lead' }, t('Estos valores se guardan por separado para cada modelo.')),
+        slider(t('Temperatura'), 0, 1.5, 0.05, s.temperature, dec, (v) => (s.temperature = v), t('Más baja: respuestas más previsibles. Más alta: más variadas. 0 elige siempre la palabra más probable.')),
+        slider(t('Top-p'), 0.05, 1, 0.05, s.topP, dec, (v) => (s.topP = v), t('Solo se eligen palabras entre las más probables hasta sumar esta probabilidad.')),
+        slider(t('Máximo de tokens'), 64, Math.min(4096, m.context / 2), 64, s.maxTokens, (v) => fmtNum(v), (v) => ((s.maxTokens = v), renderContext()), t('Longitud máxima de cada respuesta, razonamiento incluido.')),
+        h('div', { class: 'field' }, h('div', { class: 'field-row' }, h('label', {}, t('Razonamiento')), tog), h('p', { class: 'hint' }, t('El modelo piensa antes de responder. Mejora problemas de lógica, matemáticas y código, pero tarda bastante más.'))),
+        advanced,
+        h('div', { class: 'field ctx', id: 'ctx' }),
+        h(
+          'div',
+          { class: 'set-actions' },
+          h(
+            'button',
+            {
+              type: 'button',
+              class: 'btn ghost small',
+              onclick: () => {
+                settings.perModel[m.id] = defaultsFor(m);
+                saveSettings();
+                renderSettings();
+                renderComposerState();
+                toast(t('Valores recomendados de {m} restaurados.', { m: m.name }));
+              },
+            },
+            icon('refresh', 15),
+            t('Valores recomendados'),
+          ),
+          h('button', { type: 'button', class: 'btn ghost small', onclick: () => void openModels() }, icon('hardDrive', 15), t('Modelos')),
+        ),
+      ),
+    );
+  }
+
+  // Instructions ------------------------------------------------------------------------------
+  const sys = h('textarea', { rows: 4, value: settings.system, placeholder: t('Por ejemplo: «Responde siempre en español y de forma breve».'), 'aria-label': t('Instrucciones para el modelo') });
+  const setSystem = (v: string) => {
+    settings.system = v;
     saveSettings();
     scheduleContext();
-  });
-  body.append(h('div', { class: 'field' }, h('label', {}, t('Prompt de sistema')), sys, h('p', { class: 'hint' }, t('Instrucciones que el modelo tiene en cuenta en toda la conversación.'))));
-  if (!selected) return;
-  const m = selected;
-  const s = ms(m);
-  const dec = (v: number) => v.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  body.append(
-    h('div', { class: 'settings-model' }, t('Ajustes para {m}', { m: m.name })),
-    slider(t('Temperatura'), 0, 1.5, 0.05, s.temperature, dec, (v) => (s.temperature = v), t('Más baja: respuestas más previsibles. Más alta: más variadas. 0 elige siempre la palabra más probable.')),
-    slider(t('Top-p'), 0.05, 1, 0.05, s.topP, dec, (v) => (s.topP = v), t('Solo se eligen palabras entre las más probables hasta sumar esta probabilidad.')),
-    slider(t('Máximo de tokens'), 64, Math.min(4096, m.context / 2), 64, s.maxTokens, (v) => fmtNum(v), (v) => ((s.maxTokens = v), renderContext()), t('Longitud máxima de cada respuesta, razonamiento incluido.')),
+  };
+  sys.addEventListener('input', () => setSystem(sys.value));
+  const presets = h(
+    'div',
+    { class: 'presets' },
+    ...PRESETS.map(([name, text]) =>
+      h('button', { type: 'button', class: 'preset', title: t(text), onclick: () => ((sys.value = t(text)), setSystem(sys.value), sys.focus()) }, t(name)),
+    ),
+    h('button', { type: 'button', class: 'preset ghost', onclick: () => ((sys.value = ''), setSystem(''), sys.focus()) }, t('Quitar')),
   );
-  const tog = h('button', { type: 'button', class: `switch${s.reasoning ? ' on' : ''}`, role: 'switch', 'aria-checked': String(s.reasoning), 'aria-label': t('Razonamiento') }, h('i'));
-  tog.addEventListener('click', () => el.reasoningChip.click());
   body.append(
-    h('div', { class: 'field' }, h('div', { class: 'field-row' }, h('label', {}, t('Razonamiento')), tog), h('p', { class: 'hint' }, t('El modelo piensa antes de responder. Mejora problemas de lógica, matemáticas y código, pero tarda bastante más.'))),
-    h('div', { class: 'field ctx', id: 'ctx' }),
-    h(
-      'button',
-      {
-        type: 'button',
-        class: 'btn ghost small',
-        onclick: () => {
-          settings.perModel[m.id] = defaultsFor(m);
-          saveSettings();
-          renderSettings();
-          renderComposerState();
-        },
-      },
-      icon('refresh', 15),
-      t('Valores recomendados'),
+    section(
+      'system',
+      'message',
+      t('Instrucciones'),
+      h('div', { class: 'field' }, sys, h('p', { class: 'hint' }, t('El modelo las tiene en cuenta en toda la conversación, con cualquier modelo. Empieza desde un ejemplo:'))),
+      presets,
     ),
   );
-  body.append(debugBlock());
+
+  // Appearance --------------------------------------------------------------------------------
+  body.append(
+    section(
+      'look',
+      'sun',
+      t('Apariencia'),
+      segmented(t('Tema'), [['auto', t('Sistema')], ['light', t('Claro')], ['dark', t('Oscuro')]], settings.theme, (v) => ((settings.theme = v), applyTheme())),
+      segmented(t('Tamaño del texto'), [['sm', t('Pequeño')], ['md', t('Normal')], ['lg', t('Grande')]], settings.textSize, (v) => ((settings.textSize = v), applyPrefs())),
+      toggle(t('Fondo animado'), settings.motion, (v) => ((settings.motion = v), applyPrefs()), t('La luz del fondo se mueve con lo que pasa en el chat. Apagado se queda quieta, y deja la gráfica entera al modelo.')),
+    ),
+  );
+
+  // Writing and voice -------------------------------------------------------------------------
+  const writing: (Node | null)[] = [toggle(t('Intro envía el mensaje'), settings.enterSends, (v) => (settings.enterSends = v), settings.enterSends ? t('Mayús+Intro añade una línea.') : t('Ctrl+Intro (⌘+Intro en Mac) envía; Intro añade una línea.'))];
+  if (canSpeak()) {
+    const select = h('select', { 'aria-label': t('Voz') }) as HTMLSelectElement;
+    const fill = () => {
+      const voices = localVoices().sort((x, y) => Number(!x.lang.toLowerCase().startsWith(lang)) - Number(!y.lang.toLowerCase().startsWith(lang)) || x.name.localeCompare(y.name));
+      select.replaceChildren(h('option', { value: '' }, t('Automática')), ...voices.map((v) => h('option', { value: v.voiceURI }, `${v.name} · ${v.lang}`)));
+      select.value = voices.some((v) => v.voiceURI === settings.voice) ? settings.voice : '';
+    };
+    fill();
+    speechSynthesis.addEventListener?.('voiceschanged', fill, { once: true });
+    select.addEventListener('change', () => {
+      settings.voice = select.value;
+      saveSettings();
+      applyPrefs();
+    });
+    writing.push(
+      h('div', { class: 'field' }, h('label', {}, t('Voz para leer en voz alta')), select, h('p', { class: 'hint' }, t('Solo voces instaladas en este equipo: el texto no sale del navegador.'))),
+      slider(t('Velocidad de lectura'), 0.6, 1.8, 0.1, settings.rate, (v) => `${v.toLocaleString(locale, { maximumFractionDigits: 1 })}×`, (v) => ((settings.rate = v), applyPrefs()), t('1× es la velocidad normal.')),
+      h(
+        'div',
+        { class: 'set-actions' },
+        h('button', { type: 'button', class: 'btn ghost small', onclick: () => speakSample(t('Hola. Así sonarán las respuestas leídas en voz alta.')) || toast(t('Este equipo no tiene voces instaladas para leer en voz alta en este idioma (se usan solo voces locales, por privacidad).')) }, icon('volume', 15), t('Probar la voz')),
+      ),
+    );
+  }
+  body.append(section('voice', 'pen', t('Escritura y voz'), ...writing));
+
+  // Data --------------------------------------------------------------------------------------
+  const usage = h('p', { class: 'hint set-lead' }, t('Calculando el espacio ocupado…'));
+  void storageEstimate().then((e) => {
+    usage.textContent = e
+      ? t('{n} conversaciones · esta web ocupa {u} en el navegador (sobre todo los modelos descargados).', { n: fmtNum(conversations.length), u: fmtBytes(e.usage) })
+      : t('{n} conversaciones guardadas en este navegador.', { n: fmtNum(conversations.length) });
+  });
+  const importInput = h('input', { type: 'file', accept: 'application/json,.json', hidden: true }) as HTMLInputElement;
+  importInput.addEventListener('change', () => void importConversations(importInput));
+  body.append(
+    section(
+      'data',
+      'database',
+      t('Tus datos'),
+      usage,
+      h(
+        'div',
+        { class: 'set-actions' },
+        h('button', { type: 'button', class: 'btn ghost small', onclick: () => void exportConversations() }, icon('download', 15), t('Exportar')),
+        h('button', { type: 'button', class: 'btn ghost small', onclick: () => importInput.click() }, icon('upload', 15), t('Importar')),
+        h('button', { type: 'button', class: 'btn ghost small danger-text', onclick: () => void clearAllConversations() }, icon('trash', 15), t('Borrar todas')),
+        importInput,
+      ),
+      h('p', { class: 'hint' }, t('La copia es un archivo JSON con todas las conversaciones, imágenes incluidas. Se crea en tu equipo; no se sube a ningún sitio.')),
+    ),
+  );
+
+  body.append(section('debug', 'code', t('Depuración'), debugBlock()));
+  body.scrollTop = scroll;
   renderContext();
+}
+
+async function exportConversations() {
+  if (!conversations.length) return toast(t('No hay conversaciones que exportar.'));
+  const blob = await exportBackup(conversations);
+  const a = h('a', { href: URL.createObjectURL(blob), download: `webgpu-chat-${new Date().toISOString().slice(0, 10)}.json` });
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  toast(t('{n} conversaciones exportadas.', { n: fmtNum(conversations.length) }));
+}
+
+async function importConversations(input: HTMLInputElement) {
+  const file = input.files?.[0];
+  input.value = '';
+  if (!file) return;
+  try {
+    const list = await readBackup(file);
+    for (const c of list) await saveConversation(c);
+    conversations = await listConversations();
+    renderList();
+    renderSettings();
+    toast(t('{n} conversaciones importadas.', { n: fmtNum(list.length) }));
+  } catch {
+    toast(t('Ese archivo no es una copia de WebGPU Chat.'));
+  }
+}
+
+async function clearAllConversations() {
+  if (!conversations.length) return toast(t('No hay conversaciones que borrar.'));
+  if (generating) return toast(t('Espera a que termine la respuesta o párala.'));
+  if (!(await confirmDialog(t('¿Borrar todas las conversaciones?'), t('Se eliminarán las {n} conversaciones de este navegador. Los modelos descargados se conservan. No se puede deshacer.', { n: fmtNum(conversations.length) }), t('Borrar todas')))) return;
+  await clearConversations();
+  conversations = [];
+  newConversation();
+  renderSettings();
+  toast(t('Conversaciones borradas.'));
 }
 
 /** Settings block for the debug mode: a switch, the record and a copyable report. */
@@ -1588,10 +1819,12 @@ async function boot() {
   addEventListener('offline', renderOnline);
   wireGlow();
   applyTheme();
+  applyPrefs();
   hydrateIcons();
   $('btn-theme').addEventListener('click', () => {
     settings.theme = isDark() ? 'light' : 'dark';
     saveSettings();
+    if (el.shell.classList.contains('panel-open')) renderSettings();
     const d = document as Document & { startViewTransition?: (cb: () => void) => unknown };
     if (d.startViewTransition && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
       document.documentElement.classList.add('vt-theme');

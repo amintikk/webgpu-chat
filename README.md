@@ -28,7 +28,7 @@ La selección de modelos, las fichas (qué hacen bien, límites, equipo) y las l
 - Barra lateral con las conversaciones (nueva, renombrar, borrar, buscar en títulos y mensajes), guardadas en IndexedDB.
 - Respuesta en streaming con parar (Esc), regenerar y copiar; Markdown propio (sin `innerHTML` con texto del modelo) con resaltado de código (highlight.js) y botón de copiar en cada bloque.
 - Selector de modelo con ficha, estado (descargado, cargado) y advertencias de compatibilidad, sin restringir la selección.
-- Panel de ajustes: prompt de sistema, temperatura, top-p, máximo de tokens, razonamiento sí/no y uso del contexto. Si la conversación no cabe, se omiten los mensajes más antiguos.
+- Panel de ajustes en secciones plegables: modelo (temperatura, top-p, máximo de tokens, razonamiento y, en Avanzado, top-k y penalización por repetición; por modelo), instrucciones con ejemplos, apariencia (tema, tamaño del texto, fondo animado), escritura y voz (Intro envía o no, voz local y velocidad) y tus datos (exportar/importar todas las conversaciones en JSON con imágenes, borrarlas todas). Si la conversación no cabe en el contexto, se omiten los mensajes más antiguos.
 - Descarga con progreso real (bytes) y gestión de modelos guardados (tamaño en caché, borrar, limpiar revisiones antiguas).
 - Tema claro y oscuro, español e inglés, barra lateral como cajón en móvil.
 - Adjuntar archivos (clip, arrastrar o pegar): PDF (texto extraído con pdf.js, cargado solo al adjuntar uno) y archivos de texto o código, hasta 5 por mensaje. Se leen en el navegador y se añaden al mensaje como texto; si no caben en el contexto del modelo, la app lo dice antes de enviar (`src/app/attach.ts`).

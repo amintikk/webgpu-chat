@@ -15,7 +15,7 @@ body {
   height: 100dvh;
 }
 .shell.panel-open {
-  grid-template-columns: 272px minmax(0, 1fr) 320px;
+  grid-template-columns: 272px minmax(0, 1fr) 344px;
 }
 
 /* Sidebar ---------------------------------------------------------------------------------- */
@@ -891,7 +891,7 @@ body {
   background: var(--bg-2);
 }
 .settings-inner {
-  width: 320px;
+  width: 344px;
   height: 100%;
   display: flex;
   flex-direction: column;
@@ -2204,4 +2204,201 @@ dialog::backdrop {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   user-select: text;
+}
+
+/* Settings panel: one collapsible glass card per topic --------------------------------------- */
+.settings-body {
+  padding: 2px 14px 28px;
+}
+.set-sec {
+  margin: 0 0 10px;
+  border-radius: 18px;
+  border: 1px solid var(--glass-edge);
+  background: var(--surface);
+  box-shadow: var(--glass-shine);
+}
+.set-sec > summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 12px 12px 12px;
+  font-weight: 600;
+  font-size: 14.5px;
+  list-style: none;
+  cursor: pointer;
+  user-select: none;
+  border-radius: 18px;
+}
+.set-sec > summary::-webkit-details-marker,
+.set-adv > summary::-webkit-details-marker {
+  display: none;
+}
+.set-sec > summary:focus-visible,
+.set-adv > summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+.set-ico {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  flex: none;
+  border-radius: 9px;
+  color: #fff;
+  background: linear-gradient(135deg, var(--blue), var(--violet));
+}
+.set-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.set-sec > summary > svg,
+.set-adv > summary > svg {
+  color: var(--muted);
+  transition: transform 0.3s var(--ease);
+}
+.set-sec:not([open]) > summary > svg,
+.set-adv:not([open]) > summary > svg {
+  transform: rotate(-90deg);
+}
+.set-body {
+  padding: 0 14px 14px;
+  border-top: 1px solid var(--border);
+}
+.set-body > .field:first-child,
+.set-body > .set-lead:first-child {
+  margin-top: 12px;
+}
+.set-body .field {
+  margin: 14px 0;
+}
+.set-body > :last-child {
+  margin-bottom: 0;
+}
+.set-lead {
+  margin: 12px 0 4px;
+}
+.set-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 12px;
+}
+.set-actions .btn.small {
+  height: 30px;
+  padding: 0 10px;
+  gap: 6px;
+  background: var(--surface-2);
+}
+.set-actions .btn.small:hover {
+  background: var(--surface-3);
+}
+.btn.danger-text {
+  color: var(--danger);
+}
+.set-adv {
+  margin: 10px 0 4px;
+}
+.set-adv > summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13.5px;
+  font-weight: 550;
+  color: var(--text-2);
+  list-style: none;
+  cursor: pointer;
+}
+.set-adv > .field:first-of-type {
+  margin-top: 8px;
+}
+.settings .ctx {
+  margin-top: 14px;
+  background: var(--surface-2);
+}
+/* Segmented control (theme, text size). */
+.seg {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 12px;
+  background: var(--surface-3);
+}
+.seg button {
+  height: 30px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--text-2);
+  font-size: 13px;
+  font-weight: 550;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+}
+.seg button:hover {
+  color: var(--text);
+}
+.seg button[aria-checked='true'] {
+  background: var(--surface-solid);
+  color: var(--text);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+/* Instruction presets under the textarea. */
+.presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+.preset {
+  height: 28px;
+  padding: 0 11px;
+  border-radius: 999px;
+  border: 1px solid var(--border-strong);
+  background: transparent;
+  color: var(--text-2);
+  font-size: 12.5px;
+  font-weight: 550;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+.preset:hover {
+  color: var(--text);
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+.preset.ghost {
+  border-style: dashed;
+}
+.field select {
+  width: 100%;
+  height: 38px;
+  padding: 0 10px;
+  border-radius: 12px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 13.5px;
+  outline: 0;
+}
+.field select:focus {
+  border-color: var(--accent);
+}
+.set-body .debug-block {
+  margin-top: 12px;
+}
+
+/* Settings → Tamaño del texto (the conversation and the message being written). */
+html[data-text='sm'] .thread,
+html[data-text='sm'] .composer textarea {
+  font-size: 14px;
+}
+html[data-text='lg'] .thread,
+html[data-text='lg'] .composer textarea {
+  font-size: 17px;
 }

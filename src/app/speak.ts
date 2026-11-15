@@ -6,6 +6,27 @@ import { lang, t } from '../i18n.ts';
 
 const synth: SpeechSynthesis | null = 'speechSynthesis' in globalThis ? speechSynthesis : null;
 let speaking: HTMLButtonElement | null = null;
+/** Chosen in Settings: a voice (voiceURI; '' = the default for the page's language) and its speed. */
+export const voicePrefs = { voice: '', rate: 1 };
+
+/** Voices installed on this device (never the browser's online voices). */
+export function localVoices(): SpeechSynthesisVoice[] {
+  return synth ? synth.getVoices().filter((v) => v.localService) : [];
+}
+export const canSpeak = (): boolean => !!synth;
+
+/** Says a short sample with the chosen voice (Settings → Probar). */
+export function speakSample(text: string): boolean {
+  const voice = localVoice();
+  if (!synth || !voice) return false;
+  stop();
+  const u = new SpeechSynthesisUtterance(text);
+  u.voice = voice;
+  u.lang = voice.lang;
+  u.rate = voicePrefs.rate;
+  synth.speak(u);
+  return true;
+}
 
 /** Markdown to plain sentences: code blocks are skipped, symbols dropped. */
 function plain(md: string): string {
@@ -20,7 +41,9 @@ function plain(md: string): string {
 }
 
 function localVoice(): SpeechSynthesisVoice | null {
-  const voices = synth!.getVoices().filter((v) => v.localService);
+  const voices = localVoices();
+  const chosen = voicePrefs.voice && voices.find((v) => v.voiceURI === voicePrefs.voice);
+  if (chosen) return chosen;
   return voices.find((v) => v.lang.toLowerCase().startsWith(lang) && v.default) ?? voices.find((v) => v.lang.toLowerCase().startsWith(lang)) ?? null;
 }
 
@@ -42,6 +65,7 @@ export function speakButton(get: () => string, onMissing: (msg: string) => void)
     const u = new SpeechSynthesisUtterance(plain(get()));
     u.voice = voice;
     u.lang = voice.lang;
+    u.rate = voicePrefs.rate;
     u.onend = u.onerror = () => speaking === btn && stop();
     speaking = btn;
     btn.replaceChildren(icon('stop', 16));
