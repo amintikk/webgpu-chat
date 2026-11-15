@@ -97,7 +97,6 @@ body {
   overflow-y: auto;
   margin: 0 -4px;
   padding: 0 4px;
-  scrollbar-width: thin;
 }
 .list-group {
   padding: 14px 10px 4px;
