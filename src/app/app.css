@@ -15,7 +15,7 @@ body {
   height: 100dvh;
 }
 .shell.panel-open {
-  grid-template-columns: 272px minmax(0, 1fr) 344px;
+  grid-template-columns: 272px minmax(0, 1fr) 336px;
 }
 
 /* Sidebar ---------------------------------------------------------------------------------- */
@@ -891,7 +891,7 @@ body {
   background: var(--bg-2);
 }
 .settings-inner {
-  width: 344px;
+  width: 336px;
   height: 100%;
   display: flex;
   flex-direction: column;
@@ -2206,199 +2206,341 @@ dialog::backdrop {
   user-select: text;
 }
 
-/* Settings panel: one collapsible glass card per topic --------------------------------------- */
+/* Settings panel ---------------------------------------------------------------------------
+   Groups: a small heading over a quiet card; rows inside are separated by hairlines. One set of controls
+   (slider, switch, field, buttons) drawn here so they look the same everywhere in the panel. */
 .settings-body {
-  padding: 2px 14px 28px;
+  padding: 4px 16px 32px;
 }
 .set-sec {
-  margin: 0 0 10px;
-  border-radius: 18px;
-  border: 1px solid var(--glass-edge);
-  background: var(--surface);
-  box-shadow: var(--glass-shine);
+  margin: 0 0 22px;
 }
-.set-sec > summary {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 12px 12px 12px 12px;
+.set-head {
+  margin: 0 4px 8px;
+  font-size: 12px;
   font-weight: 600;
-  font-size: 14.5px;
-  list-style: none;
-  cursor: pointer;
-  user-select: none;
-  border-radius: 18px;
-}
-.set-sec > summary::-webkit-details-marker,
-.set-adv > summary::-webkit-details-marker {
-  display: none;
-}
-.set-sec > summary:focus-visible,
-.set-adv > summary:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: -2px;
-}
-.set-ico {
-  display: grid;
-  place-items: center;
-  width: 28px;
-  height: 28px;
-  flex: none;
-  border-radius: 9px;
-  color: #fff;
-  background: linear-gradient(135deg, var(--blue), var(--violet));
-}
-.set-title {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.set-sec > summary > svg,
-.set-adv > summary > svg {
+  letter-spacing: 0.02em;
   color: var(--muted);
-  transition: transform 0.3s var(--ease);
 }
-.set-sec:not([open]) > summary > svg,
-.set-adv:not([open]) > summary > svg {
-  transform: rotate(-90deg);
+.set-card {
+  padding: 0 14px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: var(--surface);
 }
-.set-body {
-  padding: 0 14px 14px;
+.set-card > * {
+  margin: 0;
+  padding: 14px 0;
+}
+.set-card > * + * {
   border-top: 1px solid var(--border);
 }
-.set-body > .field:first-child,
-.set-body > .set-lead:first-child {
-  margin-top: 12px;
+.set-card > .set-lead {
+  padding: 12px 0;
 }
-.set-body .field {
-  margin: 14px 0;
+.settings .field {
+  margin: 0;
 }
-.set-body > :last-child {
-  margin-bottom: 0;
+.settings .field label {
+  margin: 0 0 8px;
+  font-size: 13.5px;
+  font-weight: 550;
+  color: var(--text);
 }
-.set-lead {
-  margin: 12px 0 4px;
+.settings .field-row label {
+  margin: 0;
 }
-.set-actions {
+.settings .hint {
+  margin: 6px 0 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--muted);
+}
+.set-lead.hint {
+  margin: 0;
+}
+.set-value {
+  min-width: 40px;
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: var(--surface-2);
+  font: 550 12px/1.4 var(--mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  color: var(--text-2);
+}
+
+/* Slider: thin track filled up to the value (--p, set by the script), round thumb. */
+.settings input[type='range'] {
+  -webkit-appearance: none;
+  appearance: none;
+  display: block;
+  width: 100%;
+  height: 18px;
+  margin: 4px 0 0;
+  background: transparent;
+  cursor: pointer;
+  --track: linear-gradient(to right, var(--accent) 0 var(--p, 50%), var(--surface-3) var(--p, 50%) 100%);
+}
+.settings input[type='range']::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 4px;
+  background: var(--track);
+}
+.settings input[type='range']::-moz-range-track {
+  height: 4px;
+  border-radius: 4px;
+  background: var(--track);
+}
+.settings input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  margin-top: -6px;
+  border-radius: 50%;
+  border: 0;
+  background: #fff;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.12), 0 1px 3px rgba(0, 0, 0, 0.25);
+  transition: transform 0.15s var(--ease);
+}
+.settings input[type='range']::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 0;
+  background: #fff;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.12), 0 1px 3px rgba(0, 0, 0, 0.25);
+}
+.settings input[type='range']:hover::-webkit-slider-thumb,
+.settings input[type='range']:focus-visible::-webkit-slider-thumb {
+  transform: scale(1.12);
+}
+.settings input[type='range']:focus-visible {
+  outline: 0;
+}
+.settings input[type='range']:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 25%, transparent), 0 1px 3px rgba(0, 0, 0, 0.25);
+}
+
+/* Switch. */
+.settings .switch {
+  width: 34px;
+  height: 20px;
+  background: var(--surface-3);
+  box-shadow: inset 0 0 0 1px var(--border);
+  transition: background 0.2s var(--ease);
+}
+.settings .switch i {
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  transition: transform 0.2s var(--ease);
+}
+.settings .switch.on {
+  background: var(--accent);
+  box-shadow: none;
+}
+.settings .switch.on i {
+  transform: translateX(14px);
+}
+.settings .switch:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Text field and select. */
+.settings .field textarea,
+.settings .field select {
+  width: 100%;
+  border-radius: 10px;
+  border: 1px solid var(--border-strong);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 13.5px;
+  outline: 0;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.settings .field textarea {
+  min-height: 92px;
+  padding: 9px 11px;
+  line-height: 1.5;
+  resize: vertical;
+}
+.settings .field select {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 34px;
+  padding: 0 32px 0 10px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238b909c' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+.settings .field textarea:focus,
+.settings .field select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+/* Buttons: one quiet outlined style. */
+.set-actions,
+.settings .debug-tools {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+}
+.settings .debug-tools {
   margin-top: 12px;
 }
-.set-actions .btn.small {
+.set-actions .btn.small,
+.settings .debug-tools .btn.small {
   height: 30px;
-  padding: 0 10px;
+  padding: 0 11px;
   gap: 6px;
+  border-radius: 8px;
+  border: 1px solid var(--border-strong);
+  background: transparent;
+  color: var(--text);
+  font-size: 12.5px;
+  font-weight: 550;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+.set-actions .btn.small svg,
+.settings .debug-tools .btn.small svg {
+  color: var(--text-2);
+}
+.set-actions .btn.small:hover,
+.settings .debug-tools .btn.small:hover {
   background: var(--surface-2);
+  border-color: var(--muted);
 }
-.set-actions .btn.small:hover {
-  background: var(--surface-3);
-}
-.btn.danger-text {
+.set-actions .btn.danger-text,
+.set-actions .btn.danger-text svg {
   color: var(--danger);
 }
-.set-adv {
-  margin: 10px 0 4px;
+.set-actions .btn.danger-text:hover {
+  background: var(--danger-soft);
+  border-color: color-mix(in srgb, var(--danger) 45%, transparent);
 }
-.set-adv > summary {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 13.5px;
-  font-weight: 550;
-  color: var(--text-2);
-  list-style: none;
-  cursor: pointer;
-}
-.set-adv > .field:first-of-type {
-  margin-top: 8px;
-}
-.settings .ctx {
-  margin-top: 14px;
-  background: var(--surface-2);
-}
-/* Segmented control (theme, text size). */
-.seg {
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: 1fr;
-  gap: 2px;
-  padding: 3px;
-  border-radius: 12px;
-  background: var(--surface-3);
-}
-.seg button {
-  height: 30px;
-  border: 0;
-  border-radius: 9px;
-  background: transparent;
-  color: var(--text-2);
-  font-size: 13px;
-  font-weight: 550;
-  cursor: pointer;
-  transition: background 0.2s, color 0.2s, box-shadow 0.2s;
-}
-.seg button:hover {
-  color: var(--text);
-}
-.seg button[aria-checked='true'] {
-  background: var(--surface-solid);
-  color: var(--text);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
-}
-/* Instruction presets under the textarea. */
+
+/* Instruction presets: small outlined chips under the field. */
 .presets {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  margin-top: 10px;
 }
 .preset {
-  height: 28px;
-  padding: 0 11px;
-  border-radius: 999px;
+  height: 26px;
+  padding: 0 10px;
+  border-radius: 7px;
   border: 1px solid var(--border-strong);
   background: transparent;
   color: var(--text-2);
   font-size: 12.5px;
-  font-weight: 550;
   cursor: pointer;
-  transition: background 0.2s, color 0.2s, border-color 0.2s;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
 .preset:hover {
   color: var(--text);
-  border-color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  background: var(--surface-2);
+  border-color: var(--muted);
 }
 .preset.ghost {
-  border-style: dashed;
-}
-.field select {
-  width: 100%;
-  height: 38px;
-  padding: 0 10px;
-  border-radius: 12px;
-  border: 1px solid var(--border-strong);
-  background: var(--surface);
-  color: var(--text);
-  font-size: 13.5px;
-  outline: 0;
-}
-.field select:focus {
-  border-color: var(--accent);
-}
-.set-body .debug-block {
-  margin-top: 12px;
+  border-color: transparent;
+  color: var(--muted);
 }
 
-/* Settings → Tamaño del texto (the conversation and the message being written). */
-html[data-text='sm'] .thread,
-html[data-text='sm'] .composer textarea {
-  font-size: 14px;
+/* "Avanzado": a plain disclosure row inside the model card. */
+.set-adv > summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13.5px;
+  font-weight: 550;
+  list-style: none;
+  cursor: pointer;
 }
-html[data-text='lg'] .thread,
-html[data-text='lg'] .composer textarea {
-  font-size: 17px;
+.set-adv > summary::-webkit-details-marker {
+  display: none;
+}
+.set-adv > summary > svg {
+  color: var(--muted);
+  transition: transform 0.2s var(--ease);
+}
+.set-adv:not([open]) > summary > svg {
+  transform: rotate(-90deg);
+}
+.set-adv > .field {
+  margin-top: 14px;
+}
+
+/* Context use: inside the model card, no box of its own. */
+.settings .ctx {
+  padding: 14px 0;
+  border-radius: 0;
+  border-width: 1px 0 0;
+  background: none;
+}
+.settings .ctx-row {
+  font-size: 13.5px;
+}
+.settings .ctx-bar {
+  height: 4px;
+  margin: 10px 0 0;
+  background: var(--surface-3);
+}
+
+/* A control and its button on one line (voice + Probar). */
+.set-inline {
+  display: flex;
+  gap: 6px;
+}
+.set-inline select {
+  flex: 1;
+  min-width: 0;
+}
+.set-inline .btn.small {
+  flex: none;
+  height: 34px;
+  padding: 0 11px;
+  gap: 6px;
+  border-radius: 10px;
+  border: 1px solid var(--border-strong);
+  background: transparent;
+  color: var(--text);
+  font-size: 12.5px;
+  font-weight: 550;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+.set-inline .btn.small:hover {
+  background: var(--surface-2);
+}
+.set-card .field-row .btn.small {
+  height: 28px;
+  padding: 0 10px;
+  gap: 6px;
+  border-radius: 8px;
+  border: 1px solid var(--border-strong);
+  background: transparent;
+  font-size: 12.5px;
+  font-weight: 550;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+.set-card .field-row .btn.danger-text,
+.set-card .field-row .btn.danger-text svg {
+  color: var(--danger);
+}
+.set-card .field-row .btn.danger-text:hover {
+  background: var(--danger-soft);
+  border-color: color-mix(in srgb, var(--danger) 45%, transparent);
+}
+.set-card .field > .set-actions,
+.set-card .field > .presets {
+  margin-top: 10px;
 }

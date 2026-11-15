@@ -136,7 +136,7 @@ export function mountAurora(opts: AuroraOptions = {}): void {
   const frame = (now: number) => {
     const dt = Math.min(0.1, (now - last) / 1000);
     last = now;
-    const still = (BUSY.has(mood) && now - busySince > SETTLE_MS) || held;
+    const still = (BUSY.has(mood) && now - busySince > SETTLE_MS);
     if (!document.hidden && !still) {
       // Cross-blend the states (about 1.1 s), and advance each state's own clock while it is visible.
       const k = 1 - Math.exp(-dt / 1.1);
@@ -179,12 +179,6 @@ export function mountAurora(opts: AuroraOptions = {}): void {
     requestAnimationFrame(frame);
   };
   requestAnimationFrame(frame);
-}
-
-/** Settings → Fondo animado: off holds the light where it is (no frame is drawn for it). */
-let held = false;
-export function holdAurora(on: boolean): void {
-  held = on;
 }
 
 export function setMood(next: Mood): void {
