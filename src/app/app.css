@@ -65,9 +65,15 @@ body {
   background: var(--surface-2);
 }
 .new-chat kbd {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
   margin-left: auto;
   font: 500 11px var(--sans);
   color: var(--muted);
+}
+.new-chat kbd svg {
+  stroke-width: 2.2;
 }
 .search {
   display: flex;

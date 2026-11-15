@@ -112,7 +112,7 @@ export const EN: Record<string, string> = {
   'El modelo las tiene en cuenta en toda la conversación, con cualquier modelo. Empieza desde un ejemplo:': 'The model follows them for the whole conversation, with any model. Start from an example:',
   'Intro envía el mensaje': 'Enter sends the message',
   'Mayús+Intro añade una línea.': 'Shift+Enter adds a line.',
-  'Ctrl+Intro (⌘+Intro en Mac) envía; Intro añade una línea.': 'Ctrl+Enter (⌘+Enter on Mac) sends; Enter adds a line.',
+  'Ctrl+Intro (Cmd+Intro en Mac) envía; Intro añade una línea.': 'Ctrl+Enter (Cmd+Enter on Mac) sends; Enter adds a line.',
   'Voz': 'Voice',
   'Voz para leer en voz alta': 'Voice for reading aloud',
   'Solo voces instaladas en este equipo: el texto no sale del navegador.': 'Only voices installed on this device: the text never leaves the browser.',

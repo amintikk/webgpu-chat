@@ -37,7 +37,7 @@ interface Settings {
   system: string;
   perModel: Partial<Record<ModelId, ModelSettings>>;
   panel: boolean;
-  /** Enter sends (Shift+Enter: new line). Off: Ctrl/⌘+Enter sends and Enter adds a line. */
+  /** Enter sends (Shift+Enter: new line). Off: Ctrl/Cmd+Enter sends and Enter adds a line. */
   enterSends: boolean;
   /** Read aloud: a local voice (its voiceURI, '' = the system's default for the language) and its speed. */
   voice: string;
@@ -1247,7 +1247,7 @@ function renderSettings() {
   );
 
   // Writing and voice -------------------------------------------------------------------------
-  const writing: (Node | null)[] = [toggle(t('Intro envía el mensaje'), settings.enterSends, (v) => (settings.enterSends = v), settings.enterSends ? t('Mayús+Intro añade una línea.') : t('Ctrl+Intro (⌘+Intro en Mac) envía; Intro añade una línea.'))];
+  const writing: (Node | null)[] = [toggle(t('Intro envía el mensaje'), settings.enterSends, (v) => (settings.enterSends = v), settings.enterSends ? t('Mayús+Intro añade una línea.') : t('Ctrl+Intro (Cmd+Intro en Mac) envía; Intro añade una línea.'))];
   if (canSpeak()) {
     const select = h('select', { 'aria-label': t('Voz') }) as HTMLSelectElement;
     const fill = () => {
