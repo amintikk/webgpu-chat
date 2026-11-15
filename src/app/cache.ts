@@ -1,6 +1,7 @@
 // Model files downloaded by Transformers.js live in Cache Storage under the file URL at the pinned
 // revision. These helpers report what is stored for each model and delete it.
 import { MODELS, fileUrl, visionFiles, type ModelInfo } from '../engine/models.ts';
+import { legacyUrl, legacyUrls } from '../engine/cachemove.ts';
 
 const CACHE = 'transformers-cache';
 
@@ -24,7 +25,9 @@ export async function cacheStatus(m: ModelInfo): Promise<CacheEntry> {
   const out: CacheEntry = { present: 0, expected: m.files.length, bytes: 0 };
   if (!c) return out;
   for (const f of m.files) {
-    const r = await c.match(fileUrl(m, f.path));
+    // Also under the model's previous address, until it is moved (see cachemove.ts).
+    const old = legacyUrl(m, f.path);
+    const r = (await c.match(fileUrl(m, f.path))) ?? (old ? await c.match(old) : undefined);
     if (!r) continue;
     out.present++;
     out.bytes += Number(r.headers.get('content-length')) || f.bytes;
@@ -38,15 +41,15 @@ export const isComplete = (e: CacheEntry) => e.expected > 0 && e.present === e.e
 export async function deleteModel(m: ModelInfo): Promise<void> {
   const c = await openCache();
   if (!c) return;
-  const prefix = `https://huggingface.co/${m.repo}/`;
-  for (const req of await c.keys()) if (req.url.startsWith(prefix)) await c.delete(req);
+  const prefixes = [`https://huggingface.co/${m.repo}/`, ...(m.legacy ? [`https://huggingface.co/${m.legacy.repo}/`] : [])];
+  for (const req of await c.keys()) if (prefixes.some((p) => req.url.startsWith(p))) await c.delete(req);
 }
 
 /** Cached files of older revisions or of models no longer offered (left behind by updates). */
 export async function orphanBytes(): Promise<number> {
   const c = await openCache();
   if (!c) return 0;
-  const known = new Set(MODELS.flatMap((m) => [...m.files, ...visionFiles(m)].map((f) => fileUrl(m, f.path))));
+  const known = new Set([...MODELS.flatMap((m) => [...m.files, ...visionFiles(m)].map((f) => fileUrl(m, f.path))), ...legacyUrls()]);
   let bytes = 0;
   for (const req of await c.keys()) {
     if (known.has(req.url)) continue;
@@ -59,7 +62,7 @@ export async function orphanBytes(): Promise<number> {
 export async function deleteOrphans(): Promise<void> {
   const c = await openCache();
   if (!c) return;
-  const known = new Set(MODELS.flatMap((m) => [...m.files, ...visionFiles(m)].map((f) => fileUrl(m, f.path))));
+  const known = new Set([...MODELS.flatMap((m) => [...m.files, ...visionFiles(m)].map((f) => fileUrl(m, f.path))), ...legacyUrls()]);
   for (const req of await c.keys()) if (!known.has(req.url) && req.url.startsWith('https://huggingface.co/')) await c.delete(req);
 }
 

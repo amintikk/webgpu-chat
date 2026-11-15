@@ -20,7 +20,7 @@ import type { ChatMessage, FromWorker, GenOptions, ToWorker } from './protocol.t
 import { GpuProfile, OrtProfile } from './profiling.ts';
 import { splitReasoning } from './reasoning.ts';
 import { matmulBench } from './mmbench.ts';
-import { moveLegacyCache } from './cachemove.ts';
+import { legacyUrls, moveLegacyCache } from './cachemove.ts';
 import { expandImageTokens, forgetImages, processImage, visionInputs } from './vision.ts';
 import type { ImageRef } from './protocol.ts';
 
@@ -120,7 +120,7 @@ async function dropOrphans() {
   if (!('caches' in globalThis)) return;
   try {
     const cache = await caches.open('transformers-cache');
-    const known = new Set(MODELS.flatMap((x) => [...x.files, ...visionFiles(x)].map((f) => fileUrl(x, f.path))));
+    const known = new Set([...MODELS.flatMap((x) => [...x.files, ...visionFiles(x)].map((f) => fileUrl(x, f.path))), ...legacyUrls()]);
     let bytes = 0;
     for (const req of await cache.keys()) {
       if (known.has(req.url) || !req.url.startsWith('https://huggingface.co/')) continue;
@@ -298,7 +298,7 @@ async function load(id: string, dtypeOverride?: string, device = 'webgpu', profi
       if (s) s.loaded = s.total;
     }
   };
-  await moveLegacyCache(); // before dropOrphans, which would delete the old copies
+  await moveLegacyCache(m); // this model's files cached under its previous repository
   await dropOutdatedFiles(m);
   await dropOrphans();
   dbg(`cargar ${m.id} (${m.cls}) · dispositivo ${device} · dtype ${JSON.stringify(dtypeOverride ?? m.dtype)}`);

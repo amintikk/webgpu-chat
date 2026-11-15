@@ -1537,7 +1537,6 @@ function showCard(m: ModelInfo) {
 }
 
 async function refreshCache() {
-  await moveLegacyCache();
   await Promise.all(AVAILABLE.map(async (m) => cacheInfo.set(m.id, await cacheStatus(m))));
 }
 
@@ -1824,6 +1823,8 @@ async function boot() {
     );
   }
   await refreshCache();
+  // Files cached under a model's previous repository move to the new address in the background.
+  void moveLegacyCache().then(() => refreshCache());
   const rec = recommend(gpu);
   // Explicit and saved choices are preserved on every device.
   const asked = modelById(new URLSearchParams(location.search).get('model') ?? '');
