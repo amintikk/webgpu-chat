@@ -14,7 +14,7 @@ import {
   Tensor,
   env,
 } from '@huggingface/transformers';
-import { MODELS, fileUrl, modelById, type ModelInfo } from './models.ts';
+import { MODELS, fileUrl, modelById, sourceUrl, type ModelInfo } from './models.ts';
 import type { ChatMessage, FromWorker, GenOptions, ToWorker } from './protocol.ts';
 import { GpuProfile } from './profiling.ts';
 import { splitReasoning } from './reasoning.ts';
@@ -65,13 +65,37 @@ const pinnedFetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
       const stored = await downloadToCache(cache, pinned, m[3]!, init);
       if (stored) return stored;
     }
-    return realFetch(pinned, init);
+    const src = sourceUrl(model, m[3]!);
+    if (src !== pinned) dbg(`${m[3]}: desde ${src.replace('https://huggingface.co/', '')}`);
+    return realFetch(src, init);
   }
   return realFetch(input, init).catch((e) => {
     console.warn('[worker] request failed:', url, e);
     throw e;
   });
 }) as typeof fetch;
+/**
+ * A file that now comes from another source (e.g. a WebGPU-tuned graph) has the same cache key as before, so an
+ * old copy would be used forever. Drop cached copies whose size is not the expected one.
+ */
+async function dropOutdatedFiles(m: ModelInfo) {
+  if (!('caches' in globalThis)) return;
+  try {
+    const cache = await caches.open('transformers-cache');
+    for (const f of m.files) {
+      if (!f.src) continue;
+      const r = await cache.match(fileUrl(m, f.path));
+      const size = r ? (await r.clone().blob()).size : 0; // graph files are small (about 1 MB)
+      if (r && size !== f.bytes) {
+        await cache.delete(fileUrl(m, f.path));
+        dbg(`${f.path}: copia en caché desactualizada (${size} bytes), se descarga la nueva`);
+      }
+    }
+  } catch {
+    /* cache unavailable */
+  }
+}
+
 /** Network progress of weight files streamed to the cache (see downloadToCache); set by load(). */
 let onNetProgress: ((file: string, loaded: number, total: number) => void) | null = null;
 
@@ -235,6 +259,7 @@ async function load(id: string, dtypeOverride?: string, device = 'webgpu') {
       if (s) s.loaded = s.total;
     }
   };
+  await dropOutdatedFiles(m);
   dbg(`cargar ${m.id} (${m.cls}) · dispositivo ${device} · dtype ${JSON.stringify(dtypeOverride ?? m.dtype)}`);
   post({ type: 'status', stage: 'download' });
   const opts = { revision: m.revision, progress_callback: progress };

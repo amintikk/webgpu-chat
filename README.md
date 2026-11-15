@@ -18,6 +18,8 @@ las conversaciones se guardan en IndexedDB. Nada de lo que escribes sale de tu e
 | Recomendado | Qwen3.5 4B (Qwen) | [onnx-community/Qwen3.5-4B-ONNX-OPT@bb07226](https://huggingface.co/onnx-community/Qwen3.5-4B-ONNX-OPT/tree/bb072268d0912bdc5cf4f41c8c6f53a03fd68624) (exportación optimizada: atención lineal fusionada, sin bucles en la CPU), solo texto | 2,82 GB | Apache 2.0 |
 | Máximo | Gemma 4 12B (Google) | exportación propia: [AMINOXDEV/gemma-4-12B-it-ONNX@90e0a27](https://huggingface.co/AMINOXDEV/gemma-4-12B-it-ONNX/tree/90e0a27bf539717b6055d7e434b9faa1f0dbd9ff) ([tools/gemma4](tools/gemma4/)) | 7,54 GB | Apache 2.0 |
 
+Los grafos de Qwen3.5 4B y Gemma 4 12B se descargan de [AMINOXDEV/webgpu-chat-graphs](https://huggingface.co/AMINOXDEV/webgpu-chat-graphs): son los grafos originales con `accuracy_level=4` en `MatMulNBits`, para que ONNX Runtime pueda usar su camino int8 (DP4A) al procesar el prompt en GPUs con `subgroups`. Los pesos siguen viniendo de los repositorios originales (`src` en `src/engine/models.ts`).
+
 La selección de modelos, las fichas (qué hacen bien, límites, equipo) y las licencias están en
 `src/engine/models.ts` y `src/app/modelcards.ts`. Pruebas y medidas: [results/](results/).
 

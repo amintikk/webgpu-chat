@@ -9,6 +9,11 @@ export type ModelClass = 'Lfm3ForCausalLM' | 'Qwen3_5ForCausalLM' | 'Gemma4ForCa
 export interface ModelFile {
   path: string;
   bytes: number;
+  /**
+   * Downloaded from another repository instead of the model's own, e.g. a graph tuned for WebGPU that uses the
+   * original weights. It is still cached under the model's own URL (the key Transformers.js looks up).
+   */
+  src?: { repo: string; revision: string; path: string };
 }
 
 export interface ModelInfo {
@@ -80,7 +85,8 @@ export const MODELS: ModelInfo[] = [
       { path: 'tokenizer_config.json', bytes: 10_070 },
       { path: 'onnx/embed_tokens_q4f16.onnx', bytes: 1_064 },
       { path: 'onnx/embed_tokens_q4f16.onnx_data', bytes: 367_513_600 },
-      { path: 'onnx/decoder_model_merged_q4f16.onnx', bytes: 933_554 },
+      // Same graph with accuracy_level=4 on MatMulNBits (int8 DP4A path for prompts); see AMINOXDEV/webgpu-chat-graphs.
+      { path: 'onnx/decoder_model_merged_q4f16.onnx', bytes: 939_281, src: { repo: 'AMINOXDEV/webgpu-chat-graphs', revision: 'd1b60fb60d2ff1d6520de073d9824d71cec35267', path: 'qwen3.5-4b-opt/decoder_model_merged_q4f16.onnx' } },
       { path: 'onnx/decoder_model_merged_q4f16.onnx_data', bytes: 2_065_635_328 },
       { path: 'onnx/decoder_model_merged_q4f16.onnx_data_1', bytes: 367_513_600 },
     ],
@@ -108,7 +114,7 @@ export const MODELS: ModelInfo[] = [
       { path: 'tokenizer_config.json', bytes: 22_222 },
       { path: 'onnx/embed_tokens_q4f16.onnx', bytes: 856 },
       { path: 'onnx/embed_tokens_q4f16.onnx_data', bytes: 581_959_680 },
-      { path: 'onnx/decoder_model_merged_q4f16.onnx', bytes: 477_584 },
+      { path: 'onnx/decoder_model_merged_q4f16.onnx', bytes: 484_116, src: { repo: 'AMINOXDEV/webgpu-chat-graphs', revision: 'd1b60fb60d2ff1d6520de073d9824d71cec35267', path: 'gemma-4-12b/decoder_model_merged_q4f16.onnx' } },
       { path: 'onnx/decoder_model_merged_q4f16.onnx_data', bytes: 1_873_099_776 },
       { path: 'onnx/decoder_model_merged_q4f16.onnx_data_1', bytes: 1_845_312_512 },
       { path: 'onnx/decoder_model_merged_q4f16.onnx_data_2', bytes: 1_855_536_128 },
@@ -134,3 +140,9 @@ export const downloadBytes = (m: ModelInfo): number => m.files.reduce((a, f) => 
 
 /** URL prefix of the pinned revision; Transformers.js builds the same URLs. */
 export const fileUrl = (m: ModelInfo, path: string): string => `https://huggingface.co/${m.repo}/resolve/${m.revision}/${path}`;
+
+/** Where a file is actually downloaded from (its `src`, or the model's own pinned URL). */
+export const sourceUrl = (m: ModelInfo, path: string): string => {
+  const src = m.files.find((f) => f.path === path)?.src;
+  return src ? `https://huggingface.co/${src.repo}/resolve/${src.revision}/${src.path}` : fileUrl(m, path);
+};
