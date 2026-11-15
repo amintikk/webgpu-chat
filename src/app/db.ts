@@ -12,6 +12,15 @@ export interface StoredMessage {
   error?: string;
   /** Files attached to a user message, as text (see attach.ts). */
   files?: { name: string; size: number; text: string }[];
+  /** Pictures attached to a user message (stored as they were sent, already downscaled). */
+  images?: StoredImage[];
+}
+
+export interface StoredImage {
+  id: string;
+  name: string;
+  size: number;
+  blob: Blob;
 }
 
 export interface Conversation {

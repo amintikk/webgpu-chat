@@ -1,6 +1,6 @@
 // Model files downloaded by Transformers.js live in Cache Storage under the file URL at the pinned
 // revision. These helpers report what is stored for each model and delete it.
-import { MODELS, fileUrl, type ModelInfo } from '../engine/models.ts';
+import { MODELS, fileUrl, visionFiles, type ModelInfo } from '../engine/models.ts';
 
 const CACHE = 'transformers-cache';
 
@@ -46,7 +46,7 @@ export async function deleteModel(m: ModelInfo): Promise<void> {
 export async function orphanBytes(): Promise<number> {
   const c = await openCache();
   if (!c) return 0;
-  const known = new Set(MODELS.flatMap((m) => m.files.map((f) => fileUrl(m, f.path))));
+  const known = new Set(MODELS.flatMap((m) => [...m.files, ...visionFiles(m)].map((f) => fileUrl(m, f.path))));
   let bytes = 0;
   for (const req of await c.keys()) {
     if (known.has(req.url)) continue;
@@ -59,7 +59,7 @@ export async function orphanBytes(): Promise<number> {
 export async function deleteOrphans(): Promise<void> {
   const c = await openCache();
   if (!c) return;
-  const known = new Set(MODELS.flatMap((m) => m.files.map((f) => fileUrl(m, f.path))));
+  const known = new Set(MODELS.flatMap((m) => [...m.files, ...visionFiles(m)].map((f) => fileUrl(m, f.path))));
   for (const req of await c.keys()) if (!known.has(req.url) && req.url.startsWith('https://huggingface.co/')) await c.delete(req);
 }
 

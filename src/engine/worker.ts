@@ -15,11 +15,13 @@ import {
   Tensor,
   env,
 } from '@huggingface/transformers';
-import { MODELS, fileUrl, modelById, sourceUrl, type ModelInfo } from './models.ts';
+import { MODELS, fileUrl, modelById, sourceUrl, visionFiles, type ModelInfo } from './models.ts';
 import type { ChatMessage, FromWorker, GenOptions, ToWorker } from './protocol.ts';
 import { GpuProfile, OrtProfile } from './profiling.ts';
 import { splitReasoning } from './reasoning.ts';
 import { matmulBench } from './mmbench.ts';
+import { expandImageTokens, forgetImages, processImage, visionInputs } from './vision.ts';
+import type { ImageRef } from './protocol.ts';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type Any = any;
@@ -64,7 +66,7 @@ const pinnedFetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
     }
     const partial = new Headers(init?.headers ?? (input instanceof Request ? input.headers : undefined)).has('range');
     const method = (init?.method ?? (input instanceof Request ? input.method : 'GET')).toUpperCase();
-    if (cache && method === 'GET' && !partial && /\.onnx_data(_\d+)?$/.test(m[3]!)) {
+    if (cache && method === 'GET' && !partial && /\.onnx(_data(_\d+)?|\.data)$/.test(m[3]!)) {
       // Two sessions may ask for the same file at once (Gemma's decoder also reads the embeddings file):
       // the second waits for the first download and reads the stored copy.
       const running = inFlight.get(pinned);
@@ -117,7 +119,7 @@ async function dropOrphans() {
   if (!('caches' in globalThis)) return;
   try {
     const cache = await caches.open('transformers-cache');
-    const known = new Set(MODELS.flatMap((x) => x.files.map((f) => fileUrl(x, f.path))));
+    const known = new Set(MODELS.flatMap((x) => [...x.files, ...visionFiles(x)].map((f) => fileUrl(x, f.path))));
     let bytes = 0;
     for (const req of await cache.keys()) {
       if (known.has(req.url) || !req.url.startsWith('https://huggingface.co/')) continue;
@@ -215,6 +217,7 @@ const origUpdate = (DynamicCache as Any).prototype.update;
 interface CacheState {
   cache: Any; // DynamicCache
   tokens: number[]; // token ids whose keys/values the cache holds
+  images: string[]; // ids of the pictures inside those tokens (image tokens are alike for every picture)
 }
 
 let model: Any = null;
@@ -265,6 +268,7 @@ async function load(id: string, dtypeOverride?: string, device = 'webgpu', profi
   }
   await unload();
   chunkValidated = null;
+  loadedDevice = device;
   const t0 = performance.now();
   const totals = new Map<string, { loaded: number; total: number }>();
   const expected = new Map(m.files.map((f) => [f.path, f.bytes]));
@@ -345,13 +349,18 @@ async function load(id: string, dtypeOverride?: string, device = 'webgpu', profi
 
 async function unload() {
   await resetCaches();
+  forgetImages();
   if (model) await model.dispose();
   model = tokenizer = info = null;
 }
 
 function template(messages: ChatMessage[], generationPrompt: boolean, reasoning: boolean): number[] {
   const msgs = messages.map((m) =>
-    m.role === 'assistant' && m.reasoning ? { role: m.role, content: m.content, reasoning_content: m.reasoning } : { role: m.role, content: m.content },
+    m.role === 'assistant' && m.reasoning
+      ? { role: m.role, content: m.content, reasoning_content: m.reasoning }
+      : m.images?.length
+        ? { role: m.role, content: [...m.images.map(() => ({ type: 'image' })), { type: 'text', text: m.content }] }
+        : { role: m.role, content: m.content },
   );
   const out = tokenizer.apply_chat_template(msgs, {
     add_generation_prompt: generationPrompt,
@@ -367,7 +376,67 @@ function template(messages: ChatMessage[], generationPrompt: boolean, reasoning:
   return list;
 }
 
-async function prefill(state: CacheState | null, ids: number[], chunkSize = 0): Promise<CacheState> {
+/** The pictures of a conversation, in prompt order. */
+const imagesOf = (messages: ChatMessage[]): ImageRef[] => messages.flatMap((m) => (m.role === 'user' ? (m.images ?? []) : []));
+
+/** Prompt tokens with each picture's placeholder expanded to its image tokens. */
+async function promptIds(messages: ChatMessage[], generationPrompt: boolean, reasoning: boolean): Promise<number[]> {
+  const ids = template(messages, generationPrompt, reasoning);
+  const images = imagesOf(messages);
+  if (!images.length) return ids;
+  const m = info!;
+  if (!m.vision) throw new Error('NO_VISION');
+  const counts: number[] = [];
+  for (const img of images) counts.push((await processImage(m, img)).tokens);
+  const newline = Array.from(tokenizer.encode('\n\n', { add_special_tokens: false }) as ArrayLike<number>, Number);
+  return expandImageTokens(ids, counts, m.vision, model.config, newline);
+}
+
+/** The image encoder, downloaded and started the first time a picture is read. */
+async function ensureVision(id: number) {
+  const m = info!;
+  const v = m.vision!;
+  if (model.sessions.vision_encoder) return;
+  const tStart = performance.now();
+  dbg(`lector de imágenes: preparar ${v.data.path} (${(v.data.bytes / 1e6).toFixed(0)} MB)`);
+  post({ type: 'vision', id, loaded: 0, total: v.data.bytes });
+  const previous = onNetProgress;
+  onNetProgress = (_file, loaded, total) => post({ type: 'vision', id, loaded, total: total || v.data.bytes });
+  try {
+    const [graph, data] = await Promise.all([fetchBytes(m, v.graph.path), fetchBytes(m, v.data.path)]);
+    const ortModule: Any = loadedDevice === 'cpu' ? await import(/* @vite-ignore */ NODE_ORT) : await import('onnxruntime-web/webgpu');
+    model.sessions.vision_encoder = await ortModule.InferenceSession.create(graph, {
+      executionProviders: [loadedDevice === 'cpu' ? 'cpu' : 'webgpu'],
+      externalData: [{ path: v.data.name, data }],
+    });
+  } finally {
+    onNetProgress = previous;
+  }
+  post({ type: 'vision', id, loaded: v.data.bytes, total: v.data.bytes });
+  dbg(`lector de imágenes listo en ${Math.round(performance.now() - tStart)} ms`);
+}
+const NODE_ORT = 'onnxruntime-node';
+/** 'webgpu' in the browser; 'cpu' in the Node tests. */
+let loadedDevice = 'webgpu';
+
+/** A model file's bytes, through the pinned, cached download path (small files are stored here too). */
+async function fetchBytes(m: ModelInfo, path: string): Promise<Uint8Array> {
+  const url = fileUrl(m, path);
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`${path}: HTTP ${res.status}`);
+  const bytes = new Uint8Array(await res.arrayBuffer());
+  if ('caches' in globalThis && !/\.onnx(_data(_\d+)?|\.data)$/.test(path)) {
+    try {
+      const cache = await caches.open('transformers-cache');
+      if (!(await cache.match(url))) await cache.put(url, new Response(bytes, { headers: { 'content-length': String(bytes.length) } }));
+    } catch {
+      /* not stored: downloaded again next time */
+    }
+  }
+  return bytes;
+}
+
+async function prefill(state: CacheState | null, ids: number[], chunkSize = 0, extra: Record<string, Any> = {}, images: string[] = []): Promise<CacheState> {
   if (chunkSize && ids.length - (state?.tokens.length ?? 0) > chunkSize) {
     let next = state;
     try {
@@ -375,7 +444,7 @@ async function prefill(state: CacheState | null, ids: number[], chunkSize = 0): 
         if (stopper.interrupted) throw new Error('Prefill interrupted');
         const end = Math.min(ids.length, (next?.tokens.length ?? 0) + chunkSize);
         const previous = next;
-        next = await prefill(previous, ids.slice(0, end));
+        next = await prefill(previous, ids.slice(0, end), 0, extra, images);
         if (previous && previous !== state) await disposeState(previous, next);
       }
       return next!;
@@ -391,11 +460,12 @@ async function prefill(state: CacheState | null, ids: number[], chunkSize = 0): 
     input_ids,
     attention_mask: new Tensor('int64', new BigInt64Array(ids.length).fill(1n), [1, ids.length]),
     past_key_values: pkv,
+    ...extra,
     max_new_tokens: 1,
     do_sample: false,
     return_dict_in_generate: true,
   });
-  return { cache: out.past_key_values, tokens: ids.slice() };
+  return { cache: out.past_key_values, tokens: ids.slice(), images };
 }
 
 class DeltaStreamer extends BaseStreamer {
@@ -428,14 +498,29 @@ async function generate(id: number, messages: ChatMessage[], o: GenOptions) {
   const validationMs = performance.now() - start;
   if (stopper.interrupted) throw new Error('Prefill interrupted');
   const templateStart = performance.now();
-  const full = template(messages, true, o.reasoning);
-  const hist = template(messages, false, o.reasoning);
+  const full = await promptIds(messages, true, o.reasoning);
+  const hist = await promptIds(messages, false, o.reasoning);
   const boundary = isPrefix(hist, full) && hist.length < full.length ? hist.length : 0;
+  const pictures = imagesOf(messages);
+  const pictureIds = pictures.map((p) => p.id);
+  const imageToken = Number(model.config.image_token_id);
 
-  // Longest cached prefix of this prompt (strictly shorter, so at least one token is fed).
-  const candidates = [live, snap].filter((s): s is CacheState => !!s && s.tokens.length < full.length && isPrefix(s.tokens, full));
+  // Longest cached prefix of this prompt (strictly shorter, so at least one token is fed). Image tokens are the
+  // same for every picture, so a cache also has to hold the same pictures.
+  const samePictures = (s: CacheState) => s.images.every((x, i) => x === pictureIds[i]);
+  const candidates = [live, snap].filter((s): s is CacheState => !!s && s.tokens.length < full.length && isPrefix(s.tokens, full) && samePictures(s));
   candidates.sort((a, b) => b.tokens.length - a.tokens.length);
   let base: CacheState | null = candidates[0] ?? null;
+  // Transformers.js reads pictures only in a pass that starts from the beginning: a turn that adds a picture
+  // is read again from the start (later turns reuse the cache as usual).
+  const readsPictures = pictures.length > 0 && full.slice(base?.tokens.length ?? 0).includes(imageToken);
+  if (readsPictures) {
+    base = null;
+    await ensureVision(id);
+  }
+  const processedPictures = await Promise.all(pictures.map((p) => processImage(m, p)));
+  const firstPass = m.vision ? visionInputs(m.vision, processedPictures, readsPictures) : {};
+  const laterPass = m.vision ? visionInputs(m.vision, processedPictures, false) : {};
   const t0 = performance.now();
   const cached = base?.tokens.length ?? 0;
   const templateMs = t0 - templateStart;
@@ -445,7 +530,7 @@ async function generate(id: number, messages: ChatMessage[], o: GenOptions) {
   // even though chat templates rewrite earlier answers (e.g. dropping their reasoning).
   let newSnap: CacheState | null = null;
   if (boundary > cached) {
-    newSnap = await prefill(base, full.slice(0, boundary), o.chunkedPrefill && chunkValidated ? 128 : 0);
+    newSnap = await prefill(base, full.slice(0, boundary), readsPictures ? 0 : o.chunkedPrefill && chunkValidated ? 128 : 0, firstPass, pictureIds);
     base = newSnap;
   } else if (base === snap && snap) {
     newSnap = snap;
@@ -503,6 +588,7 @@ async function generate(id: number, messages: ChatMessage[], o: GenOptions) {
     ...ids64(full),
     ...sampling,
     past_key_values: base ? copyCache(base.cache) : undefined,
+    ...(readsPictures && !(boundary > 0) ? firstPass : laterPass),
     max_new_tokens: o.maxTokens,
     streamer: new DeltaStreamer(onIds),
     stopping_criteria: criteria,
@@ -518,6 +604,7 @@ async function generate(id: number, messages: ChatMessage[], o: GenOptions) {
       ...ids64(full.concat(head)),
       ...sampling,
       past_key_values: out.past_key_values,
+      ...laterPass,
       max_new_tokens: Math.max(64, o.maxTokens - head.length),
       streamer: new DeltaStreamer((ids) => onIds(head.concat(ids))),
       stopping_criteria: rest,
@@ -527,7 +614,7 @@ async function generate(id: number, messages: ChatMessage[], o: GenOptions) {
   const seq: number[] = Array.from(out.sequences.data as ArrayLike<bigint>, Number);
   const gen = seq.slice(full.length);
   // The cache holds the prompt and every generated token except the last one (never fed back).
-  live = { cache: out.past_key_values, tokens: full.concat(gen.slice(0, -1)) };
+  live = { cache: out.past_key_values, tokens: full.concat(gen.slice(0, -1)), images: pictureIds };
   const text = tokenizer.decode(gen, { skip_special_tokens: false });
   const r = splitReasoning(text, m.think, o.reasoning, specials());
   const eos = new Set<number>([].concat(model.generation_config?.eos_token_id ?? []).map(Number));
@@ -586,9 +673,9 @@ async function validateChunkedPrefill() {
       max_new_tokens: 8, min_new_tokens: 8, do_sample: false, stopping_criteria: [stopper], return_dict_in_generate: true,
     });
     const tokens = Array.from(out.sequences.data as ArrayLike<bigint>, String).slice(ids.length);
-    await disposeState(state, { cache: out.past_key_values, tokens: [] });
+    await disposeState(state, { cache: out.past_key_values, tokens: [], images: [] });
     state = null;
-    await disposeState({ cache: out.past_key_values, tokens: [] });
+    await disposeState({ cache: out.past_key_values, tokens: [], images: [] });
     return tokens;
   };
   try {
@@ -627,7 +714,7 @@ async function bench(id: number, compare = false, profile = false) {
           streamer, stopping_criteria: [stopper], return_dict_in_generate: true,
         });
         const end = performance.now();
-        await disposeState({ cache: out.past_key_values, tokens: [] });
+        await disposeState({ cache: out.past_key_values, tokens: [], images: [] });
         if (stopper.interrupted) throw new Error('Benchmark interrupted');
         const n = Number(out.sequences.dims.at(-1)) - ids.length;
         const prefillMs = (first || end) - t0;
@@ -684,7 +771,9 @@ self.onmessage = (e: MessageEvent<ToWorker>) => {
         // prompt: count it as if an empty user message were there, which is what the answer will add anyway.
         const hasUser = msg.messages.some((m) => m.role === 'user');
         const withUser: ChatMessage[] = hasUser ? msg.messages : [...msg.messages, { role: 'user', content: ' ' }];
-        post({ type: 'count', id: msg.id, tokens: tokenizer ? template(withUser, true, msg.reasoning).length : 0 });
+        // Pictures count as the image tokens they take (a model that cannot read them ignores them here).
+        const counted = info?.vision ? withUser : withUser.map((m) => ({ ...m, images: undefined }));
+        post({ type: 'count', id: msg.id, tokens: tokenizer ? (await promptIds(counted, true, msg.reasoning)).length : 0 });
       } else if (msg.type === 'reset') {
         await resetCaches();
       } else if (msg.type === 'unload') {

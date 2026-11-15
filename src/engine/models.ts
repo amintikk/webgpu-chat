@@ -31,6 +31,11 @@ export interface ModelInfo {
    * of config.json (0 = take `files`), and `files` are the data files those sessions get, in this order.
    */
   sharedData?: { formats: Record<string, number>; files: string[] };
+  /**
+   * Image reading, when the model has it. The encoder is downloaded the first time an image is sent, not with
+   * the model. `data` is the encoder's weights file as the graph names it.
+   */
+  vision?: VisionInfo;
   /** Largest single weight tensor (bytes): the adapter must allow a buffer at least this big. */
   largestBuffer: number;
   /** Rough GPU memory needed at the context limit (weights + cache + activations), bytes. */
@@ -44,6 +49,14 @@ export interface ModelInfo {
   license: { name: string; url: string };
   source: string;
   params: string;
+}
+
+export interface VisionInfo {
+  kind: 'qwen' | 'gemma';
+  graph: ModelFile;
+  data: ModelFile & { name: string };
+  /** Image processor settings (Transformers.js Qwen2VLImageProcessor or Gemma4ImageProcessor). */
+  processor: Record<string, unknown>;
 }
 
 export const MODELS: ModelInfo[] = [
@@ -95,6 +108,19 @@ export const MODELS: ModelInfo[] = [
       { path: 'onnx/decoder_model_merged_q4f16.onnx_data', bytes: 2_065_635_328 },
       { path: 'onnx/decoder_model_merged_q4f16.onnx_data_1', bytes: 367_513_600 },
     ],
+    // Qwen3.5 reads images with its own encoder (in fp16, the precision it was trained in: 672 MB).
+    vision: {
+      kind: 'qwen',
+      graph: { path: 'onnx/vision_encoder_fp16.onnx', bytes: 345_836 },
+      data: { path: 'onnx/vision_encoder_fp16.onnx_data', bytes: 671_943_680, name: 'vision_encoder_fp16.onnx_data' },
+      // Up to 640 image tokens (one per 32×32 pixels): enough to read text in a screenshot.
+      processor: {
+        size: { shortest_edge: 65_536, longest_edge: 655_360 },
+        patch_size: 16, temporal_patch_size: 2, merge_size: 2,
+        image_mean: [0.5, 0.5, 0.5], image_std: [0.5, 0.5, 0.5],
+        do_resize: true, do_rescale: true, do_normalize: true, do_convert_rgb: true, rescale_factor: 1 / 255,
+      },
+    },
     largestBuffer: 317_849_600,
     gpuMemory: 3.6e9,
     context: 8192,
@@ -135,6 +161,14 @@ export const MODELS: ModelInfo[] = [
       formats: { 'embed_tokens_q4f16.onnx': 1, 'decoder_model_merged_q4f16.onnx': 0 },
       files: ['decoder_model_merged_q4f16.onnx_data', 'decoder_model_merged_q4f16.onnx_data_1', 'decoder_model_merged_q4f16.onnx_data_2', 'decoder_model_merged_q4f16.onnx_data_3', 'embed_tokens_q4f16.onnx_data'],
     },
+    // Gemma 4 12B sees images as 48×48-pixel patches projected straight into the language model ("unified"):
+    // the encoder is that projection, exported in fp16 by the ONNX Runtime team.
+    vision: {
+      kind: 'gemma',
+      graph: { path: 'onnx/vision_encoder_fp16.onnx', bytes: 19_002, src: { repo: 'justinchuby/gemma-4-12b-onnx', revision: '52a1c4fa78a69f30f96c8fe20f6368621bedbb57', path: 'f16/default/vision_encoder/model.onnx' } },
+      data: { path: 'onnx/vision_encoder_fp16.onnx.data', bytes: 100_007_936, name: 'model.onnx.data', src: { repo: 'justinchuby/gemma-4-12b-onnx', revision: '52a1c4fa78a69f30f96c8fe20f6368621bedbb57', path: 'f16/default/vision_encoder/model.onnx.data' } },
+      processor: { patch_size: 48, pooling_kernel_size: 1, max_soft_tokens: 280, resample: 3, do_rescale: true, rescale_factor: 1 / 255, do_resize: true, do_convert_rgb: true },
+    },
     largestBuffer: 503_316_480,
     gpuMemory: 8.7e9, // 6.8 GB weights + KV cache at 4096 tokens (sliding layers keep their full cache here)
     context: 4096,
@@ -158,6 +192,9 @@ export const fileUrl = (m: ModelInfo, path: string): string => `https://huggingf
 
 /** Where a file is actually downloaded from (its `src`, or the model's own pinned URL). */
 export const sourceUrl = (m: ModelInfo, path: string): string => {
-  const src = m.files.find((f) => f.path === path)?.src;
+  const src = [...m.files, ...visionFiles(m)].find((f) => f.path === path)?.src;
   return src ? `https://huggingface.co/${src.repo}/resolve/${src.revision}/${src.path}` : fileUrl(m, path);
 };
+
+/** The image encoder's files (empty for text-only models). */
+export const visionFiles = (m: ModelInfo): ModelFile[] => (m.vision ? [m.vision.graph, m.vision.data] : []);

@@ -10,11 +10,12 @@ import { $, fmtBytes, fmtDuration, fmtNum, h, toast } from '../ui/dom.ts';
 import { mountAurora, pulseAurora, setAuroraProgress, setMood, wireGlow } from '../ui/aurora.ts';
 import { hydrateIcons, icon } from '../ui/icons.ts';
 import { cacheStatus, deleteModel, deleteOrphans, isComplete, orphanBytes, storageEstimate, type CacheEntry } from './cache.ts';
-import { deleteConversation, listConversations, newId, saveConversation, titleFrom, type Conversation, type StoredMessage } from './db.ts';
+import { deleteConversation, listConversations, newId, saveConversation, titleFrom, type Conversation, type StoredImage, type StoredMessage } from './db.ts';
 import { card, tierLabel } from './modelcards.ts';
 import { level, score, wait, type Level, type Wait } from './score.ts';
 import { copyButton, renderMarkdown } from './render.ts';
-import { ACCEPT, readAttachment, withAttachments, type Attachment } from './attach.ts';
+import { speakButton } from './speak.ts';
+import { ACCEPT, isImageFile, readAttachment, readImage, withAttachments, type Attachment } from './attach.ts';
 import { applyUrlDebug, clearDebug, debugOn, dlog, memoryText, reportText, setDebug, startMemoryWatch, stopMemoryWatch, watchErrors } from '../ui/debug.ts';
 
 // ---------------------------------------------------------------------------------------------
@@ -101,7 +102,17 @@ interface Pending {
   id: number;
   name: string;
   size: number;
-  file?: Attachment; // set once read
+  file?: Attachment; // set once read (text and PDF)
+  image?: StoredImage; // set once read (pictures)
+}
+const isRead = (p: Pending) => !!(p.file || p.image);
+
+/** Object URLs for picture thumbnails, one per stored picture. */
+const thumbUrls = new WeakMap<Blob, string>();
+function thumbUrl(b: Blob): string {
+  let u = thumbUrls.get(b);
+  if (!u) thumbUrls.set(b, (u = URL.createObjectURL(b)));
+  return u;
 }
 let pending: Pending[] = [];
 let pendingSeq = 0;
@@ -171,10 +182,32 @@ function convItem(c: Conversation): HTMLElement {
       'div',
       { class: 'conv-actions' },
       h('button', { type: 'button', class: 'icon-btn sm', title: t('Renombrar'), 'aria-label': t('Renombrar'), onclick: () => rename(c, row) }, icon('pencil', 15)),
+      h('button', { type: 'button', class: 'icon-btn sm', title: t('Descargar (Markdown)'), 'aria-label': t('Descargar (Markdown)'), onclick: () => exportConversation(c) }, icon('download', 15)),
       h('button', { type: 'button', class: 'icon-btn sm', title: t('Borrar'), 'aria-label': t('Borrar'), onclick: () => remove(c) }, icon('trash', 15)),
     ),
   );
   return row;
+}
+
+/** The conversation as a Markdown file, saved by the browser (nothing is uploaded). */
+function exportConversation(c: Conversation) {
+  const lines = [`# ${c.title}`, '', `_${new Date(c.createdAt).toLocaleString(locale)} · WebGPU Chat_`, ''];
+  for (const m of c.messages) {
+    if (m.role === 'user') {
+      lines.push(`## ${t('Tú')}`, '');
+      for (const i of m.images ?? []) lines.push(`_[${t('imagen')}: ${i.name}]_`);
+      for (const f of m.files ?? []) lines.push(`_[${t('archivo')}: ${f.name}]_`);
+      if (m.images?.length || m.files?.length) lines.push('');
+      lines.push(m.content, '');
+    } else {
+      lines.push(`## ${modelById(m.model ?? '')?.name ?? t('Asistente')}`, '');
+      if (m.reasoning) lines.push(`<details><summary>${t('Razonamiento')}</summary>`, '', m.reasoning, '', '</details>', '');
+      lines.push(m.error ? `> ${m.error}` : m.content, '');
+    }
+  }
+  const a = h('a', { href: URL.createObjectURL(new Blob([lines.join('\n')], { type: 'text/markdown' })), download: `${c.title.replace(/[\\/:*?"<>|]+/g, ' ').trim().slice(0, 80) || 'chat'}.md` });
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
 }
 
 function rename(c: Conversation, row: HTMLElement) {
@@ -374,6 +407,7 @@ function messageView(m: StoredMessage, index: number): HTMLElement {
     return h(
       'div',
       { class: 'msg user' },
+      m.images?.length ? h('div', { class: 'msg-images' }, ...m.images.map((i) => h('img', { src: thumbUrl(i.blob), alt: i.name, title: i.name, loading: 'lazy' }))) : null,
       m.files?.length ? h('div', { class: 'msg-files' }, ...m.files.map((f) => fileChip(f.name, `${fmtBytes(f.size)} · ${t('{n} caracteres', { n: fmtNum(f.text.length) })}`))) : null,
       m.content ? h('div', { class: 'bubble' }, m.content) : null,
       m.content ? h('div', { class: 'msg-tools' }, copyButton(() => m.content, t('Copiar'))) : null,
@@ -400,6 +434,7 @@ function messageView(m: StoredMessage, index: number): HTMLElement {
       'div',
       { class: 'msg-tools' },
       copyButton(() => m.content, t('Copiar respuesta')),
+      speakButton(() => m.content, (msg) => toast(msg)),
       isLast ? h('button', { type: 'button', class: 'icon-btn', title: t('Regenerar'), 'aria-label': t('Regenerar'), onclick: () => void regenerate() }, icon('refresh', 16)) : null,
       m.stats ? h('span', { class: 'msg-stats' }, statsLine(m.stats, m.model)) : null,
     ),
@@ -697,8 +732,8 @@ function renderComposerState() {
   el.send.title = generating ? t('Parar (Esc)') : t('Enviar (Intro)');
   el.send.setAttribute('aria-label', el.send.title);
   el.send.classList.toggle('stop', generating);
-  const hasInput = !!el.input.value.trim() || readyFiles().length > 0;
-  el.send.disabled = !generating && (!ready || !hasInput || pending.some((p) => !p.file));
+  const hasInput = !!el.input.value.trim() || readyFiles().length > 0 || readyImages().length > 0;
+  el.send.disabled = !generating && (!ready || !hasInput || !pending.every(isRead));
   el.input.disabled = !!gpu && !gpu.ok;
   el.input.placeholder = gpu && !gpu.ok ? t('WebGPU no disponible') : ready || generating ? t('Escribe un mensaje…') : loading ? t('Cargando el modelo…') : t('Descarga un modelo para empezar');
   const r = selected ? ms(selected).reasoning : false;
@@ -711,12 +746,20 @@ function genOptions(m: ModelInfo): GenOptions {
   return { temperature: s.temperature, topP: s.topP, topK: m.defaults.topK, repetitionPenalty: m.defaults.repetitionPenalty, maxTokens: s.maxTokens, reasoning: s.reasoning };
 }
 
-function toChat(msgs: StoredMessage[]): ChatMessage[] {
+function toChat(msgs: StoredMessage[], model: ModelInfo | null = selected): ChatMessage[] {
   const out: ChatMessage[] = [];
   if (settings.system.trim()) out.push({ role: 'system', content: settings.system.trim() });
+  const sees = !!model?.vision;
   for (const m of msgs) {
     if (m.role === 'assistant' && !m.content && !m.reasoning) continue;
-    out.push(m.role === 'assistant' ? { role: 'assistant', content: m.content, reasoning: m.reasoning } : { role: 'user', content: withAttachments(m.content, m.files) });
+    if (m.role === 'assistant') {
+      out.push({ role: 'assistant', content: m.content, reasoning: m.reasoning });
+      continue;
+    }
+    // A model that cannot see pictures is told they were there, so the conversation still makes sense.
+    const unseen = !sees && m.images?.length ? m.images.map((i) => `[${t('Imagen adjunta que este modelo no puede ver')}: ${i.name}]`).join('\n') : '';
+    const content = [unseen, withAttachments(m.content, m.files)].filter(Boolean).join('\n\n');
+    out.push(sees && m.images?.length ? { role: 'user', content, images: m.images.map((i) => ({ id: i.id, blob: i.blob })) } : { role: 'user', content });
   }
   return out;
 }
@@ -738,6 +781,7 @@ async function fitContext(m: ModelInfo, msgs: StoredMessage[], maxTokens: number
 
 
 const readyFiles = (): Attachment[] => pending.flatMap((p) => (p.file ? [p.file] : []));
+const readyImages = (): StoredImage[] => pending.flatMap((p) => (p.image ? [p.image] : []));
 
 function addFiles(files: File[]) {
   if (gpu && !gpu.ok) return;
@@ -748,10 +792,18 @@ function addFiles(files: File[]) {
     }
     const p: Pending = { id: ++pendingSeq, name: f.name, size: f.size };
     pending.push(p);
-    readAttachment(f)
-      .then((a) => {
-        p.file = a;
-      })
+    const image = isImageFile(f);
+    if (image && selected && !selected.vision) toast(t('{m} no puede ver imágenes. Qwen3.5 4B y Gemma 4 12B sí.', { m: selected.name }));
+    (image
+      ? readImage(f).then((img) => {
+          p.image = img;
+          p.name = img.name;
+          p.size = img.size;
+        })
+      : readAttachment(f).then((a) => {
+          p.file = a;
+        })
+    )
       .catch((e: unknown) => {
         pending = pending.filter((x) => x !== p);
         toast(e instanceof Error ? e.message : String(e));
@@ -767,11 +819,11 @@ function addFiles(files: File[]) {
   el.input.focus();
 }
 
-function fileChip(name: string, detail: string, onRemove?: () => void): HTMLElement {
+function fileChip(name: string, detail: string, onRemove?: () => void, thumb?: string): HTMLElement {
   return h(
     'div',
     { class: 'file-chip' },
-    icon('fileText', 16),
+    thumb ? h('img', { class: 'file-thumb', src: thumb, alt: '' }) : icon('fileText', 16),
     h('span', { class: 'file-meta' }, h('strong', {}, name), h('span', {}, detail)),
     onRemove ? h('button', { type: 'button', class: 'file-x', 'aria-label': t('Quitar {f}', { f: name }), title: t('Quitar'), onclick: onRemove }, icon('x', 14)) : null,
   );
@@ -782,12 +834,17 @@ function renderAttachments() {
   box.hidden = pending.length === 0;
   box.replaceChildren(
     ...pending.map((p) =>
-      fileChip(p.name, p.file ? `${fmtBytes(p.size)} · ${t('{n} caracteres', { n: fmtNum(p.file.text.length) })}` : t('Leyendo…'), () => {
-        pending = pending.filter((x) => x !== p);
-        renderAttachments();
-        renderComposerState();
-        void updateContext();
-      }),
+      fileChip(
+        p.name,
+        p.image ? `${fmtBytes(p.size)} · ${t('imagen')}` : p.file ? `${fmtBytes(p.size)} · ${t('{n} caracteres', { n: fmtNum(p.file.text.length) })}` : t('Leyendo…'),
+        () => {
+          pending = pending.filter((x) => x !== p);
+          renderAttachments();
+          renderComposerState();
+          void updateContext();
+        },
+        p.image ? thumbUrl(p.image.blob) : undefined,
+      ),
     ),
   );
 }
@@ -795,9 +852,14 @@ function renderAttachments() {
 async function send() {
   const text = el.input.value.trim();
   const files = readyFiles();
-  if ((!text && !files.length) || pending.some((p) => !p.file) || generating || engine.busy || !selected || engine.loaded !== selected.id) return;
-  const msg: StoredMessage = files.length ? { role: 'user', content: text, files } : { role: 'user', content: text };
-  if (files.length) {
+  const images = readyImages();
+  if ((!text && !files.length && !images.length) || !pending.every(isRead) || generating || engine.busy || !selected || engine.loaded !== selected.id) return;
+  if (images.length && !selected.vision) {
+    showError(t('{m} no puede ver imágenes. Cambia a Qwen3.5 4B o Gemma 4 12B, o quita la imagen.', { m: selected.name }));
+    return;
+  }
+  const msg: StoredMessage = { role: 'user', content: text, ...(files.length ? { files } : {}), ...(images.length ? { images } : {}) };
+  if (files.length || images.length) {
     // The new message alone (with its files) must leave room for the answer.
     const m = selected;
     const n = await engine.count(toChat([msg]), ms(m).reasoning);
@@ -818,7 +880,7 @@ async function send() {
   renderAttachments();
   autosize();
   if (!current) {
-    current = { id: newId(), title: titleFrom(text || files[0]!.name), createdAt: Date.now(), updatedAt: Date.now(), model: selected.id, messages: [] };
+    current = { id: newId(), title: titleFrom(text || (files[0] ?? images[0])!.name), createdAt: Date.now(), updatedAt: Date.now(), model: selected.id, messages: [] };
   }
   current.messages.push(msg);
   await persist(current);
@@ -888,6 +950,10 @@ async function respond() {
   const msg: StoredMessage = { role: 'assistant', content: '', model: m.id };
   try {
     const r = await engine.generate(chat, opts, {
+      onVision: (loaded, total) => {
+        const note = loaded >= total ? t('Leyendo la imagen…') : t('Descargando el lector de imágenes de {m} (solo la primera vez): {p} %', { m: m.name, p: Math.floor((loaded / Math.max(1, total)) * 100) });
+        body.replaceChildren(h('p', { class: 'vision-note' }, note), h('span', { class: 'cursor' }));
+      },
       onDelta: (d) => {
         setMood(d.thinking || !d.content ? 'thinking' : 'writing');
         pulseAurora(0.02);
@@ -1017,7 +1083,8 @@ async function updateContext() {
   const msgs: StoredMessage[] = [...(current?.messages ?? [])];
   const draft = el.input.value.trim();
   const files = readyFiles();
-  if (draft || files.length) msgs.push({ role: 'user', content: draft, files });
+  const images = readyImages();
+  if (draft || files.length || images.length) msgs.push({ role: 'user', content: draft, files, images });
   ctxTokens = await engine.count(toChat(msgs), ms(selected).reasoning);
   renderContext();
 }

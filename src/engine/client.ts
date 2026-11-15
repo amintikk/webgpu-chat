@@ -11,6 +11,8 @@ export interface LoadEvents {
 
 export interface GenEvents {
   onDelta: (d: { content: string; reasoning: string; thinking: boolean; tokens: number }) => void;
+  /** The image encoder is downloading or starting (first picture for this model). */
+  onVision?: (loaded: number, total: number) => void;
 }
 
 export interface GenResult {
@@ -88,6 +90,9 @@ export class Engine {
         break;
       case 'delta':
         this.gens.get(m.id)?.ev.onDelta(m);
+        break;
+      case 'vision':
+        this.gens.get(m.id)?.ev.onVision?.(m.loaded, m.total);
         break;
       case 'done': {
         const g = this.gens.get(m.id);

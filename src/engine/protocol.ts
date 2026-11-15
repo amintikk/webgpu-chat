@@ -5,6 +5,14 @@ export interface ChatMessage {
   content: string;
   /** Reasoning text produced before the answer, if any. */
   reasoning?: string;
+  /** Pictures attached to a user message (models that read images). */
+  images?: ImageRef[];
+}
+
+/** A picture in the conversation: `id` stays the same across turns, so it is processed once. */
+export interface ImageRef {
+  id: string;
+  blob: Blob;
 }
 
 export interface GenOptions {
@@ -65,6 +73,8 @@ export type FromWorker =
   | { type: 'status'; stage: 'download' | 'compile' | 'warmup' }
   | { type: 'ready'; model: ModelId; loadMs: number }
   | { type: 'delta'; id: number; content: string; reasoning: string; thinking: boolean; tokens: number }
+  /** The image encoder is being downloaded or prepared (first picture sent to this model). */
+  | { type: 'vision'; id: number; loaded: number; total: number }
   | { type: 'done'; id: number; content: string; reasoning: string; stats: GenStats }
   | { type: 'count'; id: number; tokens: number }
   | { type: 'bench'; id: number; result: BenchResult }

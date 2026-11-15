@@ -1,6 +1,8 @@
 // Attached files: read in the browser (text files as they are, PDFs with pdf.js) and added to the message as
-// plain text. Nothing is uploaded; pdf.js is loaded only the first time a PDF is attached.
+// plain text; pictures are kept as images for the models that read them. Nothing is uploaded; pdf.js is
+// loaded only the first time a PDF is attached.
 import { t } from '../i18n.ts';
+import type { StoredImage } from './db.ts';
 
 export interface Attachment {
   name: string;
@@ -11,8 +13,41 @@ export interface Attachment {
 const TEXT_EXT =
   'txt md markdown csv tsv json jsonl xml html htm css scss js mjs cjs ts tsx jsx py ipynb java kt c h cpp hpp cs go rs rb php swift sh bash zsh ps1 bat yml yaml toml ini cfg conf env sql log tex srt vtt rst org r m lua pl dart vue svelte'.split(' ');
 
+const IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/gif', 'image/bmp', 'image/avif'];
+
 /** Value for the file input's `accept`. */
-export const ACCEPT = ['.pdf', ...TEXT_EXT.map((e) => '.' + e), 'text/*', 'application/json', 'application/pdf'].join(',');
+export const ACCEPT = ['.pdf', ...TEXT_EXT.map((e) => '.' + e), 'text/*', 'application/json', 'application/pdf', ...IMAGE_TYPES, '.png', '.jpg', '.jpeg', '.webp', '.gif', '.bmp', '.avif'].join(',');
+
+export const isImageFile = (f: File) => IMAGE_TYPES.includes(f.type) || /\.(png|jpe?g|webp|gif|bmp|avif)$/i.test(f.name);
+
+const MAX_IMAGE_BYTES = 40 * 1024 * 1024;
+/** Longest side kept: the models resize further (Qwen to at most ~0.65 MP, Gemma to 280 patches of 48 px). */
+const MAX_IMAGE_SIDE = 2048;
+
+/** Reads a picture: decoded here, downscaled if very large, and kept as a PNG or JPEG. */
+export async function readImage(file: File): Promise<StoredImage> {
+  if (file.size > MAX_IMAGE_BYTES) throw new Error(t('«{f}» pesa demasiado (máximo {n} MB).', { f: file.name, n: MAX_IMAGE_BYTES >> 20 }));
+  let bitmap: ImageBitmap;
+  try {
+    bitmap = await createImageBitmap(file);
+  } catch {
+    throw new Error(t('«{f}» no es una imagen que el navegador pueda abrir.', { f: file.name }));
+  }
+  const scale = Math.min(1, MAX_IMAGE_SIDE / Math.max(bitmap.width, bitmap.height));
+  let blob: Blob = file;
+  // Re-encode when it must shrink, or when the format is one the model's reader may not decode (e.g. AVIF, GIF).
+  if (scale < 1 || !['image/png', 'image/jpeg', 'image/webp'].includes(file.type)) {
+    const w = Math.max(1, Math.round(bitmap.width * scale));
+    const hgt = Math.max(1, Math.round(bitmap.height * scale));
+    const canvas = new OffscreenCanvas(w, hgt);
+    const ctx = canvas.getContext('2d')!;
+    ctx.drawImage(bitmap, 0, 0, w, hgt);
+    blob = await canvas.convertToBlob(file.type === 'image/png' ? { type: 'image/png' } : { type: 'image/jpeg', quality: 0.92 });
+  }
+  bitmap.close();
+  const name = file.name && file.name !== 'image.png' ? file.name : t('Imagen pegada');
+  return { id: crypto.randomUUID(), name, size: blob.size, blob };
+}
 
 const MAX_TEXT_BYTES = 2 * 1024 * 1024;
 const MAX_PDF_BYTES = 30 * 1024 * 1024;
@@ -30,7 +65,7 @@ export async function readAttachment(file: File): Promise<Attachment> {
     if (!text.trim()) throw new Error(t('«{f}» no tiene texto que se pueda leer (¿es un escaneo?).', { f: file.name }));
     return { name: file.name, size: file.size, text };
   }
-  if (!isText(file)) throw new Error(t('«{f}»: solo se pueden adjuntar PDF y archivos de texto o código.', { f: file.name }));
+  if (!isText(file)) throw new Error(t('«{f}»: solo se pueden adjuntar imágenes, PDF y archivos de texto o código.', { f: file.name }));
   if (file.size > MAX_TEXT_BYTES) throw new Error(t('«{f}» pesa demasiado (máximo {n} MB).', { f: file.name, n: MAX_TEXT_BYTES >> 20 }));
   const text = await file.text();
   if (text.includes('\u0000')) throw new Error(t('«{f}» no es un archivo de texto.', { f: file.name }));
