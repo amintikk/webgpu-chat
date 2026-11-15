@@ -55,6 +55,7 @@ export type ToWorker =
   | { type: 'generate'; id: number; messages: ChatMessage[]; options: GenOptions }
   | { type: 'count'; id: number; messages: ChatMessage[]; reasoning: boolean }
   | { type: 'bench'; id: number; compare?: boolean; profile?: boolean }
+  | { type: 'mmbench'; id: number }
   | { type: 'stop' }
   | { type: 'reset' }
   | { type: 'unload' };

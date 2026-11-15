@@ -1126,6 +1126,7 @@ function debugBlock(): HTMLElement {
     h('button', { type: 'button', class: 'btn small ghost', onclick: () => void copyDebugReport() }, icon('copy', 15), t('Copiar informe')),
     h('button', { type: 'button', class: 'btn small ghost', onclick: () => (clearDebug(), toast(t('Registro borrado.'))) }, t('Borrar registro')),
     h('button', { type: 'button', class: 'btn small ghost', onclick: () => void profileGpu() }, t('Medir la GPU')),
+    h('button', { type: 'button', class: 'btn small ghost', onclick: () => void matmulBench() }, t('Medir multiplicaciones')),
   );
   return h(
     'div',
@@ -1147,6 +1148,17 @@ async function profileGpu() {
   engine.restart();
   await loadModel(id, true);
   if (engine.loaded === id) toast(t('Envía un mensaje: al terminar, la medición queda en el informe.'));
+}
+
+async function matmulBench() {
+  toast(t('Midiendo… (unos segundos)'));
+  try {
+    await engine.matmulBench();
+    toast(t('Hecho: copia el informe.'));
+  } catch (e) {
+    dlog(`medir multiplicaciones: ${e instanceof Error ? e.message : String(e)}`);
+    toast(t('No se pudo medir: mira el informe.'));
+  }
 }
 
 async function copyDebugReport() {

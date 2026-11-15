@@ -19,6 +19,7 @@ import { MODELS, fileUrl, modelById, sourceUrl, type ModelInfo } from './models.
 import type { ChatMessage, FromWorker, GenOptions, ToWorker } from './protocol.ts';
 import { GpuProfile, OrtProfile } from './profiling.ts';
 import { splitReasoning } from './reasoning.ts';
+import { matmulBench } from './mmbench.ts';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type Any = any;
@@ -673,6 +674,9 @@ self.onmessage = (e: MessageEvent<ToWorker>) => {
         await load(msg.model, msg.dtype, msg.device, msg.profile);
       } else if (msg.type === 'generate') {
         await generate(msg.id, msg.messages, msg.options);
+      } else if (msg.type === 'mmbench') {
+        await matmulBench((line) => dbg(line));
+        post({ type: 'bench', id: msg.id, result: { promptTokens: 0, newTokens: 0 } as Any });
       } else if (msg.type === 'bench') {
         await bench(msg.id, msg.compare, msg.profile);
       } else if (msg.type === 'count') {

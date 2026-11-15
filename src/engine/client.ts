@@ -170,6 +170,17 @@ export class Engine {
     });
   }
 
+  /** GPU cost of one 4-bit matmul for 1-32 tokens at once; the numbers go to the debug record. */
+  matmulBench(): Promise<BenchResult> {
+    if (this.busy) return Promise.reject(new Error('Engine busy'));
+    this.busy = true;
+    const id = ++this.seq;
+    return new Promise((resolve, reject) => {
+      this.benches.set(id, { resolve, reject });
+      this.send({ type: 'mmbench', id });
+    });
+  }
+
   stop() {
     this.send({ type: 'stop' });
   }
