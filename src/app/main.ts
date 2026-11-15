@@ -1117,33 +1117,11 @@ function debugBlock(): HTMLElement {
     }
     view.hidden = !sw.checked;
   });
-  const chunks = h('input', { type: 'checkbox' }) as HTMLInputElement;
-  try { chunks.checked = localStorage.getItem('webgpu-chat:chunked-prefill') === '1'; } catch { /* unavailable storage */ }
-  chunks.addEventListener('change', () => {
-    try { localStorage.setItem('webgpu-chat:chunked-prefill', chunks.checked ? '1' : '0'); } catch { chunks.checked = false; }
-  });
-  const compare = async (profile: boolean) => {
-    if (!engine.loaded || generating || engine.busy) return;
-    comparison.disabled = profiled.disabled = true;
-    try {
-      dlog(profile ? 'Iniciando comparación con perfil GPU; los tiempos tendrán sobrecoste.' : 'Iniciando comparación sin perfil GPU.');
-      const pendingBench = engine.bench(true, profile);
-      renderComposerState();
-      await pendingBench;
-      await showDebugReport();
-    } catch (e) { toast(String(e)); }
-    finally { comparison.disabled = profiled.disabled = false; renderComposerState(); }
-  };
-  const comparison = h('button', { type: 'button', class: 'btn small', 'data-engine-test': '', onclick: () => void compare(false) }, t('Comparar muestreo')) as HTMLButtonElement;
-  const profiled = h('button', { type: 'button', class: 'btn small', 'data-engine-test': '', onclick: () => void compare(true) }, t('Perfilar GPU')) as HTMLButtonElement;
-  comparison.disabled = profiled.disabled = !engine.loaded || engine.busy;
+  // Speed tests live in Modelos → Prueba de rendimiento (with progress and a score); every chat answer is also
+  // recorded here with its timings.
   const view = h(
     'div',
     { class: 'debug-tools', hidden: !sw.checked },
-    h('label', { class: 'check' }, chunks, h('span', {}, t('Contexto por bloques (experimental; valida equivalencia al primer uso)'))),
-    comparison, profiled,
-    h('button', { type: 'button', class: 'btn small ghost', onclick: () => engine.stop() }, t('Parar prueba')),
-    h('p', { class: 'hint' }, t('Carga un modelo primero. Cada comparación genera cuatro respuestas de prueba. El perfil GPU añade sobrecoste; consulta el informe.')),
     h('button', { type: 'button', class: 'btn small', onclick: () => void showDebugReport() }, icon('code', 15), t('Ver informe')),
     h('button', { type: 'button', class: 'btn small ghost', onclick: () => void copyDebugReport() }, icon('copy', 15), t('Copiar informe')),
     h('button', { type: 'button', class: 'btn small ghost', onclick: () => (clearDebug(), toast(t('Registro borrado.'))) }, t('Borrar registro')),

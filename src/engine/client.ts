@@ -142,8 +142,9 @@ export class Engine {
   generate(messages: ChatMessage[], options: GenOptions, ev: GenEvents): Promise<GenResult> {
     if (this.busy) return Promise.reject(new Error('Engine busy'));
     const id = ++this.seq;
-    let chunkedPrefill = false;
-    try { chunkedPrefill = localStorage.getItem('webgpu-chat:chunked-prefill') === '1'; } catch { /* unavailable storage */ }
+    // Chunked prefill stays off: its self-check cost 30-160 s before the first answer and failed for Qwen3.5.
+    const chunkedPrefill = false;
+    try { localStorage.removeItem('webgpu-chat:chunked-prefill'); } catch { /* unavailable storage */ }
     this.busy = true;
     return new Promise((resolve, reject) => {
       this.gens.set(id, { resolve, reject, ev });
