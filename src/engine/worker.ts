@@ -41,6 +41,7 @@ const CLASSES: Record<string, Any> = { Lfm3ForCausalLM, Qwen3_5ForCausalLM, Gemm
 // branch, ignoring the pinned revision. Requests for `main` of our models go to the pinned revision instead,
 // served from the browser cache when already downloaded, so loading is pinned and works offline.
 const realFetch = globalThis.fetch.bind(globalThis);
+const inFlight = new Map<string, Promise<Response | null>>();
 const pinnedFetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
   const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
   // Our models' files, from `main` or from the pinned revision.
@@ -62,7 +63,17 @@ const pinnedFetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
     const partial = new Headers(init?.headers ?? (input instanceof Request ? input.headers : undefined)).has('range');
     const method = (init?.method ?? (input instanceof Request ? input.method : 'GET')).toUpperCase();
     if (cache && method === 'GET' && !partial && /\.onnx_data(_\d+)?$/.test(m[3]!)) {
-      const stored = await downloadToCache(cache, pinned, m[3]!, init);
+      // Two sessions may ask for the same file at once (Gemma's decoder also reads the embeddings file):
+      // the second waits for the first download and reads the stored copy.
+      const running = inFlight.get(pinned);
+      if (running) {
+        await running.catch(() => null);
+        const hit = await cache.match(pinned);
+        if (hit) return hit;
+      }
+      const job = downloadToCache(cache, pinned, m[3]!, init);
+      inFlight.set(pinned, job);
+      const stored = await job.finally(() => inFlight.delete(pinned));
       if (stored) return stored;
     }
     const src = sourceUrl(model, m[3]!);
@@ -91,6 +102,27 @@ async function dropOutdatedFiles(m: ModelInfo) {
         dbg(`${f.path}: copia en caché desactualizada (${size} bytes), se descarga la nueva`);
       }
     }
+  } catch {
+    /* cache unavailable */
+  }
+}
+
+/**
+ * Files of older versions of the models (another repo or revision: no current model uses them) are deleted
+ * before loading, so a new version of a model does not run out of disk space next to the old one.
+ */
+async function dropOrphans() {
+  if (!('caches' in globalThis)) return;
+  try {
+    const cache = await caches.open('transformers-cache');
+    const known = new Set(MODELS.flatMap((x) => x.files.map((f) => fileUrl(x, f.path))));
+    let bytes = 0;
+    for (const req of await cache.keys()) {
+      if (known.has(req.url) || !req.url.startsWith('https://huggingface.co/')) continue;
+      bytes += Number((await cache.match(req))?.headers.get('content-length')) || 0;
+      await cache.delete(req);
+    }
+    if (bytes) dbg(`archivos de versiones antiguas borrados: ${(bytes / 1e9).toFixed(2)} GB`);
   } catch {
     /* cache unavailable */
   }
@@ -260,6 +292,7 @@ async function load(id: string, dtypeOverride?: string, device = 'webgpu') {
     }
   };
   await dropOutdatedFiles(m);
+  await dropOrphans();
   dbg(`cargar ${m.id} (${m.cls}) · dispositivo ${device} · dtype ${JSON.stringify(dtypeOverride ?? m.dtype)}`);
   post({ type: 'status', stage: 'download' });
   const opts = { revision: m.revision, progress_callback: progress };
@@ -270,8 +303,10 @@ async function load(id: string, dtypeOverride?: string, device = 'webgpu') {
   const tSes = performance.now();
   try {
     // Tests in Node run on the CPU: skip weight prepacking and the memory arena so a 12B model fits in less RAM.
-    const session_options = device === 'cpu' ? { enableCpuMemArena: false, extra: { session: { disable_prepacking: '1' } } } : undefined;
-    model = await cls.from_pretrained(m.repo, { ...opts, dtype, device, ...(session_options ? { session_options } : {}) });
+    const session_options: Any = device === 'cpu' ? { enableCpuMemArena: false, extra: { session: { disable_prepacking: '1' } } } : {};
+    const shared = m.sharedData ? { use_external_data_format: m.sharedData.formats } : {};
+    if (m.sharedData) session_options.externalData = m.sharedData.files.map((f) => ({ path: f, data: `onnx/${f}` }));
+    model = await cls.from_pretrained(m.repo, { ...opts, dtype, device, ...shared, session_options });
   } catch (e) {
     dbg(`creación de sesiones falló: ${errText(e)}`);
     throw e;

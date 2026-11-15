@@ -26,6 +26,11 @@ export interface ModelInfo {
   /** Transformers.js dtype option: one string, or one per session for multi-session models. */
   dtype: string | Record<string, string>;
   files: ModelFile[];
+  /**
+   * Sessions whose weights are not just their own `<name>_data, _1…` files. `formats` replaces the chunk counts
+   * of config.json (0 = take `files`), and `files` are the data files those sessions get, in this order.
+   */
+  sharedData?: { formats: Record<string, number>; files: string[] };
   /** Largest single weight tensor (bytes): the adapter must allow a buffer at least this big. */
   largestBuffer: number;
   /** Rough GPU memory needed at the context limit (weights + cache + activations), bytes. */
@@ -125,6 +130,11 @@ export const MODELS: ModelInfo[] = [
       { path: 'onnx/decoder_model_merged_q4f16.onnx_data_2', bytes: 1_977_876_480 },
       { path: 'onnx/decoder_model_merged_q4f16.onnx_data_3', bytes: 232_169_472 },
     ],
+    // The decoder reads lm_head.qweight from the embeddings file (tied weights), so it gets that file too.
+    sharedData: {
+      formats: { 'embed_tokens_q4f16.onnx': 1, 'decoder_model_merged_q4f16.onnx': 0 },
+      files: ['decoder_model_merged_q4f16.onnx_data', 'decoder_model_merged_q4f16.onnx_data_1', 'decoder_model_merged_q4f16.onnx_data_2', 'decoder_model_merged_q4f16.onnx_data_3', 'embed_tokens_q4f16.onnx_data'],
+    },
     largestBuffer: 503_316_480,
     gpuMemory: 8.7e9, // 6.8 GB weights + KV cache at 4096 tokens (sliding layers keep their full cache here)
     context: 4096,
