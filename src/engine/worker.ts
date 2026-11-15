@@ -392,8 +392,7 @@ async function promptIds(messages: ChatMessage[], generationPrompt: boolean, rea
   if (!m.vision) throw new Error('NO_VISION');
   const counts: number[] = [];
   for (const img of images) counts.push((await processImage(m, img)).tokens);
-  const newline = Array.from(tokenizer.encode('\n\n', { add_special_tokens: false }) as ArrayLike<number>, Number);
-  return expandImageTokens(ids, counts, m.vision, model.config, newline);
+  return expandImageTokens(ids, counts, m.vision, model.config);
 }
 
 /** The image encoder, downloaded and started the first time a picture is read. */

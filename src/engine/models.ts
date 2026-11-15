@@ -172,11 +172,12 @@ export const MODELS: ModelInfo[] = [
     },
     // Gemma 4 12B sees pictures as 48×48-pixel patches projected straight into the language model ("unified"),
     // which reads each picture's patches with attention in both directions: the worker passes that mask to the
-    // graph's masked branch while a picture is read. The projection is the ONNX Runtime team's fp16 export.
+    // graph's masked branch while a picture is read. The projection is the ONNX Runtime team's fp16 export graph.
     vision: {
       kind: 'gemma',
-      graph: { path: 'onnx/vision_encoder_fp16.onnx', bytes: 19_002 },
-      data: { path: 'onnx/vision_encoder_fp16.onnx.data', bytes: 100_007_936, name: 'model.onnx.data' },
+      // With the vision weights of the QAT checkpoint, which the QAT language model was trained with.
+      graph: { path: 'onnx/vision_encoder_qat_fp16.onnx', bytes: 19_231, src: { repo: 'AMINOXDEV/gemma-4-12B-it-qat-ONNX', revision: '94deb8d0999a37e0b555da6b81c77bb480d1736f', path: 'onnx/vision_encoder_qat_fp16.onnx' } },
+      data: { path: 'onnx/vision_encoder_qat_fp16.onnx.data', bytes: 99_852_288, name: 'vision_encoder_qat_fp16.onnx.data', src: { repo: 'AMINOXDEV/gemma-4-12B-it-qat-ONNX', revision: '94deb8d0999a37e0b555da6b81c77bb480d1736f', path: 'onnx/vision_encoder_qat_fp16.onnx.data' } },
       processor: { patch_size: 48, pooling_kernel_size: 1, max_soft_tokens: 280, resample: 3, do_rescale: true, rescale_factor: 1 / 255, do_resize: true, do_convert_rgb: true },
     },
     largestBuffer: 503_316_480,

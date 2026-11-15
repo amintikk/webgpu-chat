@@ -58,16 +58,18 @@ export async function processImage(m: ModelInfo, img: ImageRef): Promise<Process
 
 /**
  * The chat template writes one placeholder per picture; each becomes as many image tokens as the picture
- * takes (Qwen: <|image_pad|> × n; Gemma: blank lines, <start_of_image>, the image tokens, <end_of_image>).
+ * takes (Qwen: <|image_pad|> × n; Gemma: <start_of_image>, the image tokens, <end_of_image>).
  */
-export function expandImageTokens(ids: number[], counts: number[], v: VisionInfo, cfg: Any, newline: number[]): number[] {
+export function expandImageTokens(ids: number[], counts: number[], v: VisionInfo, cfg: Any): number[] {
   const imageId = Number(cfg.image_token_id);
   let k = 0;
   return ids.flatMap((x) => {
     if (x !== imageId || k >= counts.length) return [x];
     const n = counts[k++]!;
     if (v.kind === 'qwen') return Array<number>(n).fill(imageId);
-    return [...newline, Number(cfg.boi_token_id), ...Array<number>(n).fill(imageId), Number(cfg.eoi_token_id), ...newline];
+    // Gemma 4 12B ("unified"): <start_of_image> image tokens <end_of_image>, nothing around them (its processor;
+    // the smaller Gemma 4 models add blank lines, which Transformers.js copies).
+    return [Number(cfg.boi_token_id), ...Array<number>(n).fill(imageId), Number(cfg.eoi_token_id)];
   });
 }
 
