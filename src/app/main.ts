@@ -4,7 +4,7 @@ import './app.css';
 import { Engine } from '../engine/client.ts';
 import { modelWarning, probeGpu, recommend, type GpuReport } from '../engine/gpu.ts';
 import { AVAILABLE, MODELS, downloadBytes, modelById, type ModelId, type ModelInfo } from '../engine/models.ts';
-import type { ChatMessage, GenOptions, GenStats } from '../engine/protocol.ts';
+import type { ChatMessage, GenOptions, GenStats, GpuTest } from '../engine/protocol.ts';
 import { lang, locale, localPath, t } from '../i18n.ts';
 import { $, fmtBytes, fmtDuration, fmtNum, h, toast } from '../ui/dom.ts';
 import { mountAurora, pulseAurora, setAuroraProgress, setMood, wireGlow } from '../ui/aurora.ts';
@@ -638,7 +638,7 @@ async function loadModel(id: ModelId, profile = false) {
         if (s !== 'download') setAuroraProgress(1);
         renderLoad();
       },
-    }, DEV_Q4 ? 'q4' : undefined, profile);
+    }, DEV_Q4 ? 'q4' : undefined, profile, gpuTest);
     loading = null;
     markLoading(null);
     dlog(`CARGADO en ${fmtDuration(performance.now() - t0)} · ${memoryText()}`);
@@ -1395,6 +1395,7 @@ function debugBlock(): HTMLElement {
     h('button', { type: 'button', class: 'btn small ghost', onclick: () => (clearDebug(), toast(t('Registro borrado.'))) }, t('Borrar registro')),
     h('button', { type: 'button', class: 'btn small ghost', onclick: () => void profileGpu() }, t('Medir la GPU')),
     h('button', { type: 'button', class: 'btn small ghost', onclick: () => void matmulBench() }, t('Medir multiplicaciones')),
+    gpuTestField(),
   );
   return h(
     'div',
@@ -1402,6 +1403,38 @@ function debugBlock(): HTMLElement {
     h('div', { class: 'field-row' }, h('label', {}, t('Modo depuración')), sw),
     h('p', { class: 'hint' }, t('Anota cada paso de la carga del modelo (descarga, caché, memoria, errores) en esta página. No se envía nada: copia el informe y pásalo a quien te ayude.')),
     view,
+  );
+}
+
+/**
+ * GPU test mode (this page only; a reload goes back to normal): reproduces what another browser or GPU sees, e.g.
+ * Brave hiding the GPU's identity, and turns the automatic correction off. Changing it loads the model again.
+ */
+let gpuTest: GpuTest = 'auto';
+function gpuTestField(): HTMLElement {
+  const options: [GpuTest, string][] = [
+    ['auto', t('Normal (con corrección automática)')],
+    ['anon', t('GPU anónima, como Brave')],
+    ['anon-compat', t('GPU anónima + modo compatible')],
+    ['compat', t('Modo compatible')],
+  ];
+  const select = h('select', { 'aria-label': t('Prueba de GPU') }, ...options.map(([v, label]) => h('option', { value: v }, label))) as HTMLSelectElement;
+  select.value = gpuTest;
+  select.addEventListener('change', () => {
+    gpuTest = select.value as GpuTest;
+    dlog(`prueba de GPU: ${gpuTest}`);
+    const id = engine.loaded ?? settings.model;
+    if (id && !loading && !generating) {
+      engine.restart();
+      void loadModel(id);
+    }
+  });
+  return h(
+    'div',
+    { class: 'field' },
+    h('label', {}, t('Prueba de GPU')),
+    select,
+    h('p', { class: 'hint' }, t('Para reproducir fallos de otros equipos. Vuelve a cargar el modelo y desactiva la corrección automática; al recargar la página vuelve a Normal.')),
   );
 }
 

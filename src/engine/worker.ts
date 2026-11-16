@@ -16,7 +16,7 @@ import {
   env,
 } from '@huggingface/transformers';
 import { MODELS, fileUrl, modelById, sourceUrl, visionFiles, type ModelInfo } from './models.ts';
-import type { ChatMessage, FromWorker, GenOptions, ToWorker } from './protocol.ts';
+import type { ChatMessage, FromWorker, GenOptions, GpuTest, ToWorker } from './protocol.ts';
 import { GpuProfile, OrtProfile } from './profiling.ts';
 import { splitReasoning } from './reasoning.ts';
 import { matmulBench } from './mmbench.ts';
@@ -261,7 +261,8 @@ async function resetCaches() {
 
 // ---------------------------------------------------------------------------------------------
 
-async function load(id: string, dtypeOverride?: string, device = 'webgpu', profile = false) {
+async function load(id: string, dtypeOverride?: string, device = 'webgpu', profile = false, gpu: GpuTest = 'auto') {
+  gpuTest = gpu;
   const m = modelById(id);
   if (!m) throw new Error(`Unknown model ${id}`);
   if (info?.id === m.id && model) {
@@ -315,7 +316,7 @@ async function load(id: string, dtypeOverride?: string, device = 'webgpu', profi
     const session_options: Any = device === 'cpu' ? { enableCpuMemArena: false, extra: { session: { disable_prepacking: '1' } } } : {};
     const shared = m.sharedData ? { use_external_data_format: m.sharedData.formats } : {};
     if (profile) session_options.enableProfiling = true;
-    if (device === 'webgpu' && safeMode) session_options.executionProviders = [await webgpuProvider()];
+    if (device === 'webgpu' && (compat() || anonymous())) session_options.executionProviders = [await webgpuProvider()];
     profiling = profile;
     if (m.sharedData) session_options.externalData = m.sharedData.files.map((f) => ({ path: f, data: `onnx/${f}` }));
     model = await cls.from_pretrained(m.repo, { ...opts, dtype, device, ...shared, session_options });
@@ -326,9 +327,9 @@ async function load(id: string, dtypeOverride?: string, device = 'webgpu', profi
   dbg(`pesos y sesiones listos en ${Math.round(performance.now() - tSes)} ms (incluye E/S; no es tiempo exclusivo de GPU)`);
   if (device === 'webgpu') {
     try {
-      const gpuDevice = safeMode ? safeDevice : await onnx.webgpu.device;
+      const gpuDevice = compat() || anonymous() ? ownDevice : await onnx.webgpu.device;
       const a = gpuDevice?.adapterInfo;
-      dbg(`GPU del motor: ${JSON.stringify(a ? { vendor: a.vendor, architecture: a.architecture, device: a.device, description: a.description, subgroupMinSize: a.subgroupMinSize, subgroupMaxSize: a.subgroupMaxSize } : 'identidad no disponible')}${safeMode ? ' · modo compatible (sin subgrupos, sumas en fp32)' : ''}; memoria GPU y ocupación: no medidas`);
+      dbg(`GPU del motor: ${JSON.stringify(a ? { vendor: a.vendor, architecture: a.architecture, device: a.device, description: a.description, subgroupMinSize: a.subgroupMinSize, subgroupMaxSize: a.subgroupMaxSize } : 'identidad no disponible')}${compat() ? ' · modo compatible (sin subgrupos, sumas en fp32)' : ''}${anonymous() ? ' · prueba: GPU anónima (como Brave)' : ''}${gpuTest !== 'auto' ? ' · sin corrección automática' : ''}; memoria GPU y ocupación: no medidas`);
     } catch { dbg('GPU del motor: identidad no disponible'); }
   }
   // Transformers.js 4.3 (Qwen3-VL family): continuing from a cache sets `pixel_values = null`, and a
@@ -352,14 +353,14 @@ async function load(id: string, dtypeOverride?: string, device = 'webgpu', profi
   const said: number[] = Array.from(warm.sequences.data as ArrayLike<bigint>, Number).slice(ids.input_ids.dims.at(-1));
   await disposeState({ cache: warm.past_key_values ?? {}, tokens: [], images: [] });
   dbg(`primera pasada (compilar kernels) en ${Math.round(performance.now() - tWarm)} ms: ${JSON.stringify(tokenizer.decode(said, { skip_special_tokens: false }))}`);
-  if (device === 'webgpu' && degenerate(said)) {
+  if (device === 'webgpu' && gpuTest === 'auto' && degenerate(said)) {
     if (!safeMode) {
       // Seen on Linux (Brave): Qwen answered "aaaa…" while LFM3 was fine. The GPU's subgroup fast paths are the
       // part that depends on the driver; load again without them.
       dbg('la prueba tras la carga devolvió un token repetido: la GPU calcula mal con este modelo; se vuelve a cargar en modo compatible (sin subgrupos, sumas en fp32)');
       safeMode = true;
       await unload();
-      return load(id, dtypeOverride, device, profile);
+      return load(id, dtypeOverride, device, profile, gpu);
     }
     await unload();
     throw new Error('gpu-garbage'); // the page explains it (loadErrorText)
@@ -380,20 +381,38 @@ const degenerate = (ids: number[]) => ids.length >= WARMUP_TOKENS && new Set(ids
  * kept: other features and its largest limits.
  */
 let safeMode = false;
-let safeDevice: GPUDevice | null = null;
+/**
+ * Settings → Depuración, to reproduce GPU problems: 'anon' hides the GPU's identity from ONNX Runtime as Brave
+ * does (so it picks its generic kernels, not the vendor's), '…compat' forces compatible mode. Any test mode
+ * turns the automatic correction off, so what the GPU computes is what the answer shows.
+ */
+let gpuTest: GpuTest = 'auto';
+const compat = () => safeMode || gpuTest === 'compat' || gpuTest === 'anon-compat';
+const anonymous = () => gpuTest === 'anon' || gpuTest === 'anon-compat';
+let ownDevice: GPUDevice | null = null;
+let ownDeviceKind = '';
 async function webgpuProvider(): Promise<Any> {
-  if (!safeDevice) {
+  const kind = `${compat()}-${anonymous()}`;
+  if (!ownDevice || ownDeviceKind !== kind) {
     const adapter = await navigator.gpu.requestAdapter({ powerPreference: 'high-performance' });
     if (!adapter) throw new Error('WebGPU: sin adaptador');
-    const requiredFeatures = [...adapter.features].filter((f) => !/subgroup/.test(f)) as GPUFeatureName[];
+    const requiredFeatures = [...adapter.features].filter((f) => !compat() || !/subgroup/.test(f)) as GPUFeatureName[];
     const requiredLimits: Record<string, number> = {};
     for (const k in adapter.limits) {
       const v = (adapter.limits as Any)[k];
       if (typeof v === 'number') requiredLimits[k] = v;
     }
-    safeDevice = await adapter.requestDevice({ requiredFeatures, requiredLimits });
+    ownDevice = await adapter.requestDevice({ requiredFeatures, requiredLimits });
+    ownDeviceKind = kind;
+    if (anonymous()) {
+      // ONNX Runtime reads the identity from device.adapterInfo: an own property hides the real one.
+      const i = adapter.info;
+      Object.defineProperty(ownDevice, 'adapterInfo', {
+        value: { vendor: '', architecture: '', device: '', description: '', subgroupMinSize: i.subgroupMinSize, subgroupMaxSize: i.subgroupMaxSize, isFallbackAdapter: false },
+      });
+    }
   }
-  return { name: 'webgpu', device: safeDevice, enableMatmulFp32Accumulation: true };
+  return { name: 'webgpu', device: ownDevice, ...(compat() ? { enableMatmulFp32Accumulation: true } : {}) };
 }
 
 async function unload() {
@@ -454,7 +473,7 @@ async function ensureVision(id: number) {
     const [graph, data] = await Promise.all([fetchBytes(m, v.graph.path), fetchBytes(m, v.data.path)]);
     const ortModule: Any = loadedDevice === 'cpu' ? await import(/* @vite-ignore */ NODE_ORT) : await import('onnxruntime-web/webgpu');
     model.sessions.vision_encoder = await ortModule.InferenceSession.create(graph, {
-      executionProviders: [loadedDevice === 'cpu' ? 'cpu' : safeMode ? await webgpuProvider() : 'webgpu'],
+      executionProviders: [loadedDevice === 'cpu' ? 'cpu' : compat() || anonymous() ? await webgpuProvider() : 'webgpu'],
       externalData: [{ path: v.data.name, data }],
     });
   } finally {
@@ -664,7 +683,9 @@ async function generate(id: number, messages: ChatMessage[], o: GenOptions) {
       stopping_criteria: rest,
     });
   }
-  if (garbage.interrupted) {
+  if (garbage.interrupted && gpuTest !== 'auto') {
+    dbg(`prueba de GPU: la respuesta se atascó en un token repetido tras ${Number(out.sequences.dims.at(-1)) - full.length} tokens (sin corrección automática)`);
+  } else if (garbage.interrupted) {
     // The answer turned into one token over and over ("444444…"): the GPU computes this model wrongly. Load it
     // again in compatible mode before the next message (the page reloads it after this error).
     const tail = Array.from(out.sequences.data as ArrayLike<bigint>, Number).slice(-STUCK_TOKENS);
@@ -884,7 +905,7 @@ self.onmessage = (e: MessageEvent<ToWorker>) => {
     try {
       if (msg.type === 'load') {
         specialCache = null;
-        await load(msg.model, msg.dtype, msg.device, msg.profile);
+        await load(msg.model, msg.dtype, msg.device, msg.profile, msg.gpu);
       } else if (msg.type === 'generate') {
         await generate(msg.id, msg.messages, msg.options);
       } else if (msg.type === 'mmbench') {

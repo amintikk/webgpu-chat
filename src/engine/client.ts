@@ -1,6 +1,6 @@
 // Page-side handle on the inference worker.
 import type { ModelId } from './models.ts';
-import type { BenchResult, ChatMessage, FromWorker, GenOptions, GenStats, ToWorker } from './protocol.ts';
+import type { BenchResult, ChatMessage, FromWorker, GenOptions, GenStats, GpuTest, ToWorker } from './protocol.ts';
 import { lang } from '../i18n.ts';
 import { dlog } from '../ui/debug.ts';
 
@@ -136,11 +136,11 @@ export class Engine {
     }
   }
 
-  load(model: ModelId, ev: LoadEvents = {}, dtype?: string, profile = false): Promise<number> {
+  load(model: ModelId, ev: LoadEvents = {}, dtype?: string, profile = false, gpu: GpuTest = 'auto'): Promise<number> {
     this.loadWaiter?.reject(new Error('superseded'));
     return new Promise((resolve, reject) => {
       this.loadWaiter = { resolve, reject, ev };
-      this.send({ type: 'load', model, lang, dtype, profile });
+      this.send({ type: 'load', model, lang, dtype, profile, gpu });
     });
   }
 

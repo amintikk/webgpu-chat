@@ -2557,3 +2557,7 @@ dialog::backdrop {
 .set-card .field > .presets {
   margin-top: 10px;
 }
+.settings .debug-tools > .field {
+  flex-basis: 100%;
+  margin-top: 6px;
+}
