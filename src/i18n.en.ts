@@ -311,4 +311,6 @@ export const EN: Record<string, string> = {
   'Tarda unos segundos en empezar a responder.': 'It takes a few seconds to start answering.',
   'Tarda bastante en empezar a responder.': 'It takes a while to start answering.',
   'Sin conexión · la IA sigue funcionando': 'Offline · the AI keeps working',
+  '{m} da resultados erróneos con la GPU de este equipo en este navegador: tras cargarlo repite el mismo token una y otra vez, también en modo compatible. Prueba otro modelo (LFM3 1.7B) u otro navegador, como Chrome.':
+    '{m} gives wrong results with this computer\'s GPU in this browser: after loading it repeats the same token over and over, also in compatible mode. Try another model (LFM3 1.7B) or another browser, such as Chrome.',
 };

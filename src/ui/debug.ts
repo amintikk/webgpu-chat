@@ -156,6 +156,9 @@ export async function reportText(extra: string[] = []): Promise<string> {
     else {
       const i = gpu.info ?? ({} as GPUAdapterInfo);
       out.push(`GPU: ${i.vendor || 'n/d'} ${i.architecture || ''} ${i.description || ''}`.trim());
+      out.push(`GPU subgrupos: tamaño mínimo ${i.subgroupMinSize ?? 'n/d'} · máximo ${i.subgroupMaxSize ?? 'n/d'}`);
+      // Some browsers (Brave) hide WebGPU's adapter identity; WebGL's renderer string often still names the GPU.
+      out.push(`GPU según WebGL: ${webglRenderer()}`);
       out.push(`GPU: shader-f16 ${gpu.features.has('shader-f16') ? 'sí' : 'no'} · maxBufferSize ${fmtBig(gpu.limits.maxBufferSize)} · maxStorageBufferBindingSize ${fmtBig(gpu.limits.maxStorageBufferBindingSize)} · maxComputeWorkgroupStorageSize ${gpu.limits.maxComputeWorkgroupStorageSize}`);
       // Which fast paths ONNX Runtime can use: subgroups (int8 DP4A matmuls), timestamp-query (GPU profile), etc.
       out.push(`GPU funciones: ${[...gpu.features].sort().join(', ') || 'ninguna'}`);
@@ -177,4 +180,17 @@ export async function reportText(extra: string[] = []): Promise<string> {
 
 function fmtBig(n: number): string {
   return n >= 1e9 ? `${(n / 1e9).toFixed(2)} GB` : `${Math.round(n / 1e6)} MB`;
+}
+
+function webglRenderer(): string {
+  try {
+    const gl = document.createElement('canvas').getContext('webgl');
+    if (!gl) return 'sin WebGL';
+    const ext = gl.getExtension('WEBGL_debug_renderer_info');
+    const name = ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER);
+    gl.getExtension('WEBGL_lose_context')?.loseContext();
+    return String(name || 'n/d');
+  } catch {
+    return 'n/d';
+  }
 }

@@ -315,6 +315,7 @@ async function load(id: string, dtypeOverride?: string, device = 'webgpu', profi
     const session_options: Any = device === 'cpu' ? { enableCpuMemArena: false, extra: { session: { disable_prepacking: '1' } } } : {};
     const shared = m.sharedData ? { use_external_data_format: m.sharedData.formats } : {};
     if (profile) session_options.enableProfiling = true;
+    if (device === 'webgpu' && safeMode) session_options.executionProviders = [await webgpuProvider()];
     profiling = profile;
     if (m.sharedData) session_options.externalData = m.sharedData.files.map((f) => ({ path: f, data: `onnx/${f}` }));
     model = await cls.from_pretrained(m.repo, { ...opts, dtype, device, ...shared, session_options });
@@ -325,9 +326,9 @@ async function load(id: string, dtypeOverride?: string, device = 'webgpu', profi
   dbg(`pesos y sesiones listos en ${Math.round(performance.now() - tSes)} ms (incluye E/S; no es tiempo exclusivo de GPU)`);
   if (device === 'webgpu') {
     try {
-      const gpuDevice = await onnx.webgpu.device;
+      const gpuDevice = safeMode ? safeDevice : await onnx.webgpu.device;
       const a = gpuDevice?.adapterInfo;
-      dbg(`GPU del motor: ${JSON.stringify(a ? { vendor: a.vendor, architecture: a.architecture, device: a.device, description: a.description } : 'identidad no disponible')}; memoria GPU y ocupación: no medidas`);
+      dbg(`GPU del motor: ${JSON.stringify(a ? { vendor: a.vendor, architecture: a.architecture, device: a.device, description: a.description, subgroupMinSize: a.subgroupMinSize, subgroupMaxSize: a.subgroupMaxSize } : 'identidad no disponible')}${safeMode ? ' · modo compatible (sin subgrupos)' : ''}; memoria GPU y ocupación: no medidas`);
     } catch { dbg('GPU del motor: identidad no disponible'); }
   }
   // Transformers.js 4.3 (Qwen3-VL family): continuing from a cache sets `pixel_values = null`, and a
@@ -343,13 +344,52 @@ async function load(id: string, dtypeOverride?: string, device = 'webgpu', profi
   info = m;
   pictureBlocks = null;
   if (m.vision?.kind === 'gemma') maskedAttention(model.sessions.decoder_model_merged);
-  // One short forward pass compiles the GPU kernels now rather than on the first message.
+  // A few greedy tokens compile the GPU kernels now rather than on the first message, and check the answer.
   post({ type: 'status', stage: 'warmup' });
   const ids = tokenizer.apply_chat_template([{ role: 'user', content: 'Hi' }], { add_generation_prompt: true, return_dict: true });
   const tWarm = performance.now();
-  await model.generate({ ...ids, max_new_tokens: 1, do_sample: false });
-  dbg(`primera pasada (compilar kernels) en ${Math.round(performance.now() - tWarm)} ms`);
+  const warm = await model.generate({ ...ids, max_new_tokens: WARMUP_TOKENS, do_sample: false, return_dict_in_generate: true });
+  const said: number[] = Array.from(warm.sequences.data as ArrayLike<bigint>, Number).slice(ids.input_ids.dims.at(-1));
+  await disposeState({ cache: warm.past_key_values ?? {}, tokens: [], images: [] });
+  dbg(`primera pasada (compilar kernels) en ${Math.round(performance.now() - tWarm)} ms: ${JSON.stringify(tokenizer.decode(said, { skip_special_tokens: false }))}`);
+  if (device === 'webgpu' && degenerate(said)) {
+    if (!safeMode) {
+      // Seen on Linux (Brave): Qwen answered "aaaa…" while LFM3 was fine. The GPU's subgroup fast paths are the
+      // part that depends on the driver; load again without them.
+      dbg('la prueba tras la carga devolvió un token repetido: la GPU calcula mal con este modelo; se vuelve a cargar en modo compatible (sin subgrupos)');
+      safeMode = true;
+      await unload();
+      return load(id, dtypeOverride, device, profile);
+    }
+    await unload();
+    throw new Error('gpu-garbage'); // the page explains it (loadErrorText)
+  }
   post({ type: 'ready', model: m.id, loadMs: performance.now() - t0 });
+}
+
+const WARMUP_TOKENS = 8;
+/** A broken GPU computation answers one token (or two) over and over: "aaaa…". */
+const degenerate = (ids: number[]) => ids.length >= WARMUP_TOKENS && new Set(ids).size <= 2;
+
+/**
+ * Compatible mode: a GPU device without subgroups, so ONNX Runtime uses its plain kernels (reductions through
+ * workgroup memory). Everything else the adapter offers is kept: other features and its largest limits.
+ */
+let safeMode = false;
+let safeDevice: GPUDevice | null = null;
+async function webgpuProvider(): Promise<Any> {
+  if (!safeDevice) {
+    const adapter = await navigator.gpu.requestAdapter({ powerPreference: 'high-performance' });
+    if (!adapter) throw new Error('WebGPU: sin adaptador');
+    const requiredFeatures = [...adapter.features].filter((f) => !/subgroup/.test(f)) as GPUFeatureName[];
+    const requiredLimits: Record<string, number> = {};
+    for (const k in adapter.limits) {
+      const v = (adapter.limits as Any)[k];
+      if (typeof v === 'number') requiredLimits[k] = v;
+    }
+    safeDevice = await adapter.requestDevice({ requiredFeatures, requiredLimits });
+  }
+  return { name: 'webgpu', device: safeDevice };
 }
 
 async function unload() {
@@ -410,7 +450,7 @@ async function ensureVision(id: number) {
     const [graph, data] = await Promise.all([fetchBytes(m, v.graph.path), fetchBytes(m, v.data.path)]);
     const ortModule: Any = loadedDevice === 'cpu' ? await import(/* @vite-ignore */ NODE_ORT) : await import('onnxruntime-web/webgpu');
     model.sessions.vision_encoder = await ortModule.InferenceSession.create(graph, {
-      executionProviders: [loadedDevice === 'cpu' ? 'cpu' : 'webgpu'],
+      executionProviders: [loadedDevice === 'cpu' ? 'cpu' : safeMode ? await webgpuProvider() : 'webgpu'],
       externalData: [{ path: v.data.name, data }],
     });
   } finally {

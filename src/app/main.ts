@@ -669,6 +669,8 @@ async function loadModel(id: ModelId, profile = false) {
 function loadErrorText(msg: string, m: ModelInfo): string {
   // The browser could not reserve memory for the weights in the page (not the GPU's own memory): "Array buffer
   // allocation failed" and similar. Says so, instead of blaming the GPU.
+  if (msg === 'gpu-garbage')
+    return t('{m} da resultados erróneos con la GPU de este equipo en este navegador: tras cargarlo repite el mismo token una y otra vez, también en modo compatible. Prueba otro modelo (LFM3 1.7B) u otro navegador, como Chrome.', { m: m.name });
   if (msg.includes('STORAGE_FULL'))
     return (
       t('No se ha podido guardar {m} en el disco: lo más probable es que falte espacio libre (necesita unos {s}). Libera espacio y vuelve a intentarlo; lo ya descargado se conserva.', { m: m.name, s: fmtBytes(downloadBytes(m)) }) +
