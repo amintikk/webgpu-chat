@@ -979,8 +979,17 @@ async function respond() {
     dlog(`CHAT ${m.id}: ${JSON.stringify({ ...r.stats, renderMs, temperature: opts.temperature, topP: opts.topP, reasoning: opts.reasoning })}`);
     msg.partial = r.stats.stopped !== 'eos';
   } catch (e) {
-    msg.error = t('Error al generar: {e}', { e: e instanceof Error ? e.message : String(e) });
-    if (/device.*lost|GPU|memory/i.test(msg.error)) msg.error += ' ' + t('Si el problema sigue, recarga la página o usa un modelo más pequeño.');
+    const text = e instanceof Error ? e.message : String(e);
+    if (text === 'gpu-drift') {
+      // The worker saw the answer stuck on one token and dropped the model: load it again in compatible mode.
+      msg.error = t('La respuesta se ha estropeado (repetía el mismo token): la GPU de este equipo calcula mal con el modo normal. {m} se vuelve a cargar en modo compatible; regenera la respuesta cuando termine.', { m: m.name });
+      void loadModel(m.id);
+    } else if (text === 'gpu-garbage') {
+      msg.error = loadErrorText(text, m);
+    } else {
+      msg.error = t('Error al generar: {e}', { e: text });
+      if (/device.*lost|GPU|memory/i.test(msg.error)) msg.error += ' ' + t('Si el problema sigue, recarga la página o usa un modelo más pequeño.');
+    }
   }
   cancelAnimationFrame(raf);
   generating = false;

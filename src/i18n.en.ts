@@ -313,4 +313,6 @@ export const EN: Record<string, string> = {
   'Sin conexión · la IA sigue funcionando': 'Offline · the AI keeps working',
   '{m} da resultados erróneos con la GPU de este equipo en este navegador: tras cargarlo repite el mismo token una y otra vez, también en modo compatible. Prueba otro modelo (LFM3 1.7B) u otro navegador, como Chrome.':
     '{m} gives wrong results with this computer\'s GPU in this browser: after loading it repeats the same token over and over, also in compatible mode. Try another model (LFM3 1.7B) or another browser, such as Chrome.',
+  'La respuesta se ha estropeado (repetía el mismo token): la GPU de este equipo calcula mal con el modo normal. {m} se vuelve a cargar en modo compatible; regenera la respuesta cuando termine.':
+    'The answer broke down (it kept repeating the same token): this computer\'s GPU computes wrongly in normal mode. {m} is being loaded again in compatible mode; regenerate the answer when it finishes.',
 };

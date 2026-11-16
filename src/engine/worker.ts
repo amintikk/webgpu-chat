@@ -328,7 +328,7 @@ async function load(id: string, dtypeOverride?: string, device = 'webgpu', profi
     try {
       const gpuDevice = safeMode ? safeDevice : await onnx.webgpu.device;
       const a = gpuDevice?.adapterInfo;
-      dbg(`GPU del motor: ${JSON.stringify(a ? { vendor: a.vendor, architecture: a.architecture, device: a.device, description: a.description, subgroupMinSize: a.subgroupMinSize, subgroupMaxSize: a.subgroupMaxSize } : 'identidad no disponible')}${safeMode ? ' · modo compatible (sin subgrupos)' : ''}; memoria GPU y ocupación: no medidas`);
+      dbg(`GPU del motor: ${JSON.stringify(a ? { vendor: a.vendor, architecture: a.architecture, device: a.device, description: a.description, subgroupMinSize: a.subgroupMinSize, subgroupMaxSize: a.subgroupMaxSize } : 'identidad no disponible')}${safeMode ? ' · modo compatible (sin subgrupos, sumas en fp32)' : ''}; memoria GPU y ocupación: no medidas`);
     } catch { dbg('GPU del motor: identidad no disponible'); }
   }
   // Transformers.js 4.3 (Qwen3-VL family): continuing from a cache sets `pixel_values = null`, and a
@@ -356,7 +356,7 @@ async function load(id: string, dtypeOverride?: string, device = 'webgpu', profi
     if (!safeMode) {
       // Seen on Linux (Brave): Qwen answered "aaaa…" while LFM3 was fine. The GPU's subgroup fast paths are the
       // part that depends on the driver; load again without them.
-      dbg('la prueba tras la carga devolvió un token repetido: la GPU calcula mal con este modelo; se vuelve a cargar en modo compatible (sin subgrupos)');
+      dbg('la prueba tras la carga devolvió un token repetido: la GPU calcula mal con este modelo; se vuelve a cargar en modo compatible (sin subgrupos, sumas en fp32)');
       safeMode = true;
       await unload();
       return load(id, dtypeOverride, device, profile);
@@ -368,12 +368,16 @@ async function load(id: string, dtypeOverride?: string, device = 'webgpu', profi
 }
 
 const WARMUP_TOKENS = 8;
+/** Same token this many times in a row while answering: the computation went wrong (no answer does that). */
+const STUCK_TOKENS = 48;
+const stuck = (ids: number[]) => ids.length >= STUCK_TOKENS && ids.slice(-STUCK_TOKENS).every((x) => x === ids.at(-1));
 /** A broken GPU computation answers one token (or two) over and over: "aaaa…". */
 const degenerate = (ids: number[]) => ids.length >= WARMUP_TOKENS && new Set(ids).size <= 2;
 
 /**
  * Compatible mode: a GPU device without subgroups, so ONNX Runtime uses its plain kernels (reductions through
- * workgroup memory). Everything else the adapter offers is kept: other features and its largest limits.
+ * workgroup memory), and matrix products summed in fp32 instead of fp16. Everything else the adapter offers is
+ * kept: other features and its largest limits.
  */
 let safeMode = false;
 let safeDevice: GPUDevice | null = null;
@@ -389,7 +393,7 @@ async function webgpuProvider(): Promise<Any> {
     }
     safeDevice = await adapter.requestDevice({ requiredFeatures, requiredLimits });
   }
-  return { name: 'webgpu', device: safeDevice };
+  return { name: 'webgpu', device: safeDevice, enableMatmulFp32Accumulation: true };
 }
 
 async function unload() {
@@ -597,8 +601,10 @@ async function generate(id: number, messages: ChatMessage[], o: GenOptions) {
   const reserve = Math.min(512, Math.max(128, Math.round(o.maxTokens * 0.35)));
   let budgetAt = o.reasoning && o.maxTokens > reserve * 1.5 ? o.maxTokens - reserve : 0;
   const budget = new InterruptableStoppingCriteria();
+  const garbage = new InterruptableStoppingCriteria();
   const onIds = (ids: number[]) => {
     if (!prefillEnd.t) prefillEnd.t = performance.now();
+    if (!garbage.interrupted && stuck(ids)) garbage.interrupt();
     if (budgetAt && ids.length >= budgetAt && !budget.interrupted) {
       const open = splitReasoning(tokenizer.decode(ids, { skip_special_tokens: false }), m.think, o.reasoning, specials()).thinking;
       if (open) budget.interrupt();
@@ -630,6 +636,7 @@ async function generate(id: number, messages: ChatMessage[], o: GenOptions) {
   const criteria = new StoppingCriteriaList();
   criteria.push(stopper);
   criteria.push(budget);
+  criteria.push(garbage);
   let out = await model.generate({
     ...ids64(full),
     ...sampling,
@@ -646,6 +653,7 @@ async function generate(id: number, messages: ChatMessage[], o: GenOptions) {
     const head = thought.concat(close);
     const rest = new StoppingCriteriaList();
     rest.push(stopper);
+    rest.push(garbage);
     out = await model.generate({
       ...ids64(full.concat(head)),
       ...sampling,
@@ -655,6 +663,18 @@ async function generate(id: number, messages: ChatMessage[], o: GenOptions) {
       streamer: new DeltaStreamer((ids) => onIds(head.concat(ids))),
       stopping_criteria: rest,
     });
+  }
+  if (garbage.interrupted) {
+    // The answer turned into one token over and over ("444444…"): the GPU computes this model wrongly. Load it
+    // again in compatible mode before the next message (the page reloads it after this error).
+    const tail = Array.from(out.sequences.data as ArrayLike<bigint>, Number).slice(-STUCK_TOKENS);
+    dbg(`la respuesta se atascó en un token repetido (${JSON.stringify(tokenizer.decode(tail.slice(0, 8), { skip_special_tokens: false }))}…) tras ${Number(out.sequences.dims.at(-1)) - full.length} tokens${safeMode ? ', ya en modo compatible' : '; el próximo intento usará el modo compatible'}`);
+    await disposeState({ cache: out.past_key_values ?? {}, tokens: [], images: [] });
+    const already = safeMode;
+    safeMode = true;
+    await unload();
+    post({ type: 'unloaded' });
+    throw new Error(already ? 'gpu-garbage' : 'gpu-drift');
   }
   const end = performance.now();
   const seq: number[] = Array.from(out.sequences.data as ArrayLike<bigint>, Number);
