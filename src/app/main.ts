@@ -28,6 +28,8 @@ interface ModelSettings {
   topP: number;
   maxTokens: number;
   reasoning: boolean;
+  /** Context window chosen by the user (tokens); the model's default when unset. */
+  context?: number;
   /** Advanced; the model authors' values when unset. */
   topK?: number;
   repetitionPenalty?: number;
@@ -67,6 +69,9 @@ const defaultsFor = (m: ModelInfo): ModelSettings => ({
   reasoning: m.defaults.reasoning,
 });
 const ms = (m: ModelInfo): ModelSettings => (settings.perModel[m.id] ??= defaultsFor(m));
+/** The context window in use for a model: the user's choice, within what the app allows for it. */
+const ctxOf = (m: ModelInfo): number => Math.min(m.maxContext, ms(m).context ?? m.context);
+const CONTEXT_STEPS = [4096, 8192, 16384, 32768, 65536];
 
 // ---------------------------------------------------------------------------------------------
 // State
@@ -783,7 +788,7 @@ async function fitContext(m: ModelInfo, msgs: StoredMessage[], maxTokens: number
   for (;;) {
     const chat = toChat(msgs.slice(start));
     const n = await engine.count(chat, ms(m).reasoning);
-    if (n + maxTokens <= m.context || start >= msgs.length - 1) return { chat, dropped: start };
+    if (n + maxTokens <= ctxOf(m) || start >= msgs.length - 1) return { chat, dropped: start };
     start += 2; // one user + one assistant message
     while (start < msgs.length - 1 && msgs[start]!.role !== 'user') start++;
   }
@@ -890,12 +895,12 @@ async function send() {
     // The new message alone (with its files) must leave room for the answer.
     const m = selected;
     const n = await engine.count(toChat([msg]), ms(m).reasoning);
-    if (n + ms(m).maxTokens > m.context) {
+    if (n + ms(m).maxTokens > ctxOf(m)) {
       showError(
-        t('Lo adjunto es demasiado largo para {m}: ocupa unos {n} tokens y el modelo admite {c} en total, contando los {r} reservados para la respuesta. Adjunta un fragmento más corto o reduce el máximo de tokens en Ajustes.', {
+        t('Lo adjunto es demasiado largo para {m}: ocupa unos {n} tokens y el modelo admite {c} en total, contando los {r} reservados para la respuesta. Sube el contexto en Ajustes, si tu modelo lo permite, o adjunta algo más corto.', {
           m: m.name,
           n: fmtNum(n),
-          c: fmtNum(m.context),
+          c: fmtNum(ctxOf(m)),
           r: fmtNum(ms(m).maxTokens),
         }),
       );
@@ -1129,7 +1134,7 @@ function renderContext() {
   const m = selected;
   const box = document.getElementById('ctx');
   if (!box || !m) return;
-  const max = m.context;
+  const max = ctxOf(m);
   const reserve = ms(m).maxTokens;
   const used = Math.min(ctxTokens, max);
   const pct = (used / max) * 100;
@@ -1163,6 +1168,36 @@ function slider(label: string, min: number, max: number, step: number, value: nu
     saveSettings();
   });
   return h('div', { class: 'field' }, h('div', { class: 'field-row' }, h('label', {}, label), out), input, h('p', { class: 'hint' }, hint));
+}
+
+/** The context window: longer fits bigger attachments and conversations, at the cost of GPU memory. */
+function contextField(m: ModelInfo): HTMLElement {
+  const s = ms(m);
+  const gb = (n: number) => (n * m.kvBytesPerToken) / 1e9;
+  const steps = CONTEXT_STEPS.filter((n) => n <= m.maxContext);
+  const select = h(
+    'select',
+    { 'aria-label': t('Contexto') },
+    ...steps.map((n) =>
+      h('option', { value: n }, `${t('{n} tokens', { n: fmtNum(n) })}${n === m.context ? ` · ${t('recomendado')}` : ` · ${n > m.context ? '+' : '−'}${fmtNum(Math.abs(gb(n) - gb(m.context)), 1)} GB`}`),
+    ),
+  ) as HTMLSelectElement;
+  select.value = String(ctxOf(m));
+  select.addEventListener('change', () => {
+    s.context = Number(select.value);
+    // The answer budget can be at most half the window.
+    s.maxTokens = Math.min(s.maxTokens, s.context / 2);
+    saveSettings();
+    dlog(`contexto de ${m.id}: ${s.context}`);
+    renderSettings();
+    void updateContext();
+  });
+  return h(
+    'div',
+    { class: 'field' },
+    h('div', { class: 'field-row' }, h('label', {}, t('Contexto')), select),
+    h('p', { class: 'hint' }, t('Cuánto texto lee de una vez: conversación, archivos y respuesta. Más contexto usa más memoria de la GPU y los textos largos tardan más en leerse; si el modelo falla con un archivo grande, bájalo.')),
+  );
 }
 
 /** A group in the settings panel: a small heading over a card whose rows are separated by hairlines. */
@@ -1221,7 +1256,8 @@ function renderSettings() {
       section(m.name,
         slider(t('Temperatura'), 0, 1.5, 0.05, s.temperature, dec, (v) => (s.temperature = v), t('Más baja: respuestas más previsibles. Más alta: más variadas. 0 elige siempre la palabra más probable.')),
         slider(t('Top-p'), 0.05, 1, 0.05, s.topP, dec, (v) => (s.topP = v), t('Solo se eligen palabras entre las más probables hasta sumar esta probabilidad.')),
-        slider(t('Máximo de tokens'), 64, Math.min(4096, m.context / 2), 64, s.maxTokens, (v) => fmtNum(v), (v) => ((s.maxTokens = v), renderContext()), t('Longitud máxima de cada respuesta, razonamiento incluido.')),
+        contextField(m),
+        slider(t('Máximo de tokens'), 64, Math.min(4096, ctxOf(m) / 2), 64, Math.min(s.maxTokens, ctxOf(m) / 2), (v) => fmtNum(v), (v) => ((s.maxTokens = v), renderContext()), t('Longitud máxima de cada respuesta, razonamiento incluido.')),
         h('div', { class: 'field' }, h('div', { class: 'field-row' }, h('label', {}, t('Razonamiento')), tog), h('p', { class: 'hint' }, t('El modelo piensa antes de responder. Mejora problemas de lógica, matemáticas y código, pero tarda bastante más.'))),
         advanced,
         h('div', { class: 'field ctx', id: 'ctx' }),
@@ -1564,7 +1600,7 @@ function cardView(m: ModelInfo, compact = false): HTMLElement {
       { class: 'card-facts' },
       h('div', {}, h('dt', {}, t('Parámetros')), h('dd', {}, m.params)),
       h('div', {}, h('dt', {}, t('Descarga')), h('dd', {}, fmtBytes(downloadBytes(m)))),
-      h('div', {}, h('dt', {}, t('Contexto en la web')), h('dd', {}, t('{n} tokens', { n: fmtNum(m.context) }))),
+      h('div', {}, h('dt', {}, t('Contexto en la web')), h('dd', {}, t('{n} tokens', { n: fmtNum(ctxOf(m)) }) + (m.maxContext > m.context ? ` · ${t('hasta {n} en Ajustes', { n: fmtNum(m.maxContext) })}` : ''))),
       h('div', {}, h('dt', {}, t('Licencia')), h('dd', {}, h('a', { href: m.license.url, target: '_blank', rel: 'noopener' }, m.license.name))),
     ),
     h('h3', {}, t('Qué hace bien')),

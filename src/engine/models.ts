@@ -42,8 +42,12 @@ export interface ModelInfo {
   largestBuffer: number;
   /** Rough GPU memory needed at the context limit (weights + cache + activations), bytes. */
   gpuMemory: number;
-  /** Context window offered in the app (tokens). The models support more; the cap keeps memory bounded. */
+  /** Default context window in the app (tokens). The models support more; the cap keeps memory bounded. */
   context: number;
+  /** Largest context the user can choose in Settings (tokens). */
+  maxContext: number;
+  /** GPU memory the KV cache takes per token of context (fp16, attention layers only), bytes: for the estimate shown. */
+  kvBytesPerToken: number;
   /** Generation defaults recommended by the model authors. */
   defaults: { temperature: number; topP: number; topK: number; repetitionPenalty: number; reasoning: boolean };
   /** Reasoning markers as they appear in the decoded output. */
@@ -83,6 +87,8 @@ export const MODELS: ModelInfo[] = [
     largestBuffer: 131_072_000,
     gpuMemory: 1.6e9,
     context: 8192,
+    maxContext: 65536,
+    kvBytesPerToken: 11 * 2 * 4 * 128 * 2, // 6 full + 5 sliding attention layers; the 13 conv layers keep a fixed state
     defaults: { temperature: 0.3, topP: 0.95, topK: 50, repetitionPenalty: 1.05, reasoning: false },
     think: { open: '<think>', close: '</think>', promptOpens: true },
     license: { name: 'LFM Open License v1.0', url: 'https://huggingface.co/LiquidAI/LFM3-1.7B/blob/main/LICENSE' },
@@ -130,6 +136,8 @@ export const MODELS: ModelInfo[] = [
     largestBuffer: 317_849_600,
     gpuMemory: 3.6e9,
     context: 8192,
+    maxContext: 65536,
+    kvBytesPerToken: 8 * 2 * 4 * 256 * 2, // 8 full attention layers; the 24 linear ones keep a fixed state
     defaults: { temperature: 0.7, topP: 0.8, topK: 20, repetitionPenalty: 1.0, reasoning: false },
     think: { open: '<think>', close: '</think>', promptOpens: true },
     license: { name: 'Apache 2.0', url: 'https://huggingface.co/Qwen/Qwen3.5-4B/blob/main/LICENSE' },
@@ -183,6 +191,8 @@ export const MODELS: ModelInfo[] = [
     largestBuffer: 503_316_480,
     gpuMemory: 8.7e9, // 6.8 GB weights + KV cache at 4096 tokens (sliding layers keep their full cache here)
     context: 4096,
+    maxContext: 8192,
+    kvBytesPerToken: 48 * 2 * 8 * 256 * 2, // every layer keeps its whole cache in this export
     defaults: { temperature: 1.0, topP: 0.95, topK: 64, repetitionPenalty: 1.0, reasoning: false },
     think: { open: '<|channel>thought', close: '<channel|>', promptOpens: false },
     license: { name: 'Apache 2.0', url: 'https://ai.google.dev/gemma/docs/gemma_4_license' },
