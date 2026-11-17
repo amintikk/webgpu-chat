@@ -17,7 +17,7 @@ import { copyButton, renderMarkdown } from './render.ts';
 import { canSpeak, localVoices, speakButton, speakSample, voicePrefs } from './speak.ts';
 import { exportBackup, readBackup } from './backup.ts';
 import { moveLegacyCache } from '../engine/cachemove.ts';
-import { ACCEPT, isImageFile, readAttachment, readImage, withAttachments, type Attachment } from './attach.ts';
+import { ACCEPT, isImageFile, isZipFile, readAttachment, readImage, readZip, withAttachments, type Attachment } from './attach.ts';
 import { applyUrlDebug, clearDebug, debugOn, dlog, memoryText, reportText, setDebug, startMemoryWatch, stopMemoryWatch, watchErrors } from '../ui/debug.ts';
 
 // ---------------------------------------------------------------------------------------------
@@ -114,6 +114,7 @@ interface Pending {
   size: number;
   file?: Attachment; // set once read (text and PDF)
   image?: StoredImage; // set once read (pictures)
+  images?: StoredImage[]; // pictures found inside a zip (models that see)
 }
 const isRead = (p: Pending) => !!(p.file || p.image);
 
@@ -418,7 +419,7 @@ function messageView(m: StoredMessage, index: number): HTMLElement {
       'div',
       { class: 'msg user' },
       m.images?.length ? h('div', { class: 'msg-images' }, ...m.images.map((i) => h('img', { src: thumbUrl(i.blob), alt: i.name, title: i.name, loading: 'lazy' }))) : null,
-      m.files?.length ? h('div', { class: 'msg-files' }, ...m.files.map((f) => fileChip(f.name, `${fmtBytes(f.size)} · ${t('{n} caracteres', { n: fmtNum(f.text.length) })}`))) : null,
+      m.files?.length ? h('div', { class: 'msg-files' }, ...m.files.map((f) => fileChip(f.name, fileDetail(f)))) : null,
       m.content ? h('div', { class: 'bubble' }, m.content) : null,
       m.content ? h('div', { class: 'msg-tools' }, copyButton(() => m.content, t('Copiar'))) : null,
     );
@@ -793,7 +794,7 @@ async function fitContext(m: ModelInfo, msgs: StoredMessage[], maxTokens: number
 
 
 const readyFiles = (): Attachment[] => pending.flatMap((p) => (p.file ? [p.file] : []));
-const readyImages = (): StoredImage[] => pending.flatMap((p) => (p.image ? [p.image] : []));
+const readyImages = (): StoredImage[] => pending.flatMap((p) => [...(p.image ? [p.image] : []), ...(p.images ?? [])]);
 
 function addFiles(files: File[]) {
   if (gpu && !gpu.ok) return;
@@ -812,9 +813,14 @@ function addFiles(files: File[]) {
           p.name = img.name;
           p.size = img.size;
         })
-      : readAttachment(f).then((a) => {
-          p.file = a;
-        })
+      : isZipFile(f)
+        ? readZip(f, !!selected?.vision).then((z) => {
+            p.file = z.file;
+            p.images = z.images;
+          })
+        : readAttachment(f).then((a) => {
+            p.file = a;
+          })
     )
       .catch((e: unknown) => {
         pending = pending.filter((x) => x !== p);
@@ -841,6 +847,15 @@ function fileChip(name: string, detail: string, onRemove?: () => void, thumb?: s
   );
 }
 
+/** Size and what the model reads: characters for a file; files (and pictures) for a zip. */
+function fileDetail(f: Attachment, images = 0): string {
+  const parts = [fmtBytes(f.size)];
+  if (f.entries != null) parts.push(t('{n} archivos', { n: fmtNum(f.entries) }));
+  if (images) parts.push(t('{n} imágenes', { n: images }));
+  parts.push(t('{n} caracteres', { n: fmtNum(f.text.length) }));
+  return parts.join(' · ');
+}
+
 function renderAttachments() {
   const box = $('attachments');
   box.hidden = pending.length === 0;
@@ -848,7 +863,7 @@ function renderAttachments() {
     ...pending.map((p) =>
       fileChip(
         p.name,
-        p.image ? `${fmtBytes(p.size)} · ${t('imagen')}` : p.file ? `${fmtBytes(p.size)} · ${t('{n} caracteres', { n: fmtNum(p.file.text.length) })}` : t('Leyendo…'),
+        p.image ? `${fmtBytes(p.size)} · ${t('imagen')}` : p.file ? fileDetail(p.file, p.images?.length) : t('Leyendo…'),
         () => {
           pending = pending.filter((x) => x !== p);
           renderAttachments();

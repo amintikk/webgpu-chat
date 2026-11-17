@@ -11,7 +11,7 @@ export interface StoredMessage {
   partial?: boolean;
   error?: string;
   /** Files attached to a user message, as text (see attach.ts). */
-  files?: { name: string; size: number; text: string }[];
+  files?: { name: string; size: number; text: string; entries?: number }[];
   /** Pictures attached to a user message (stored as they were sent, already downscaled). */
   images?: StoredImage[];
 }
