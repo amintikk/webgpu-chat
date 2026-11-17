@@ -191,7 +191,7 @@ export const MODELS: ModelInfo[] = [
     largestBuffer: 503_316_480,
     gpuMemory: 8.7e9, // 6.8 GB weights + KV cache at 4096 tokens (sliding layers keep their full cache here)
     context: 4096,
-    maxContext: 8192,
+    maxContext: 32768,
     kvBytesPerToken: 48 * 2 * 8 * 256 * 2, // every layer keeps its whole cache in this export
     defaults: { temperature: 1.0, topP: 0.95, topK: 64, repetitionPenalty: 1.0, reasoning: false },
     think: { open: '<|channel>thought', close: '<channel|>', promptOpens: false },
