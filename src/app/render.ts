@@ -25,6 +25,7 @@ import yaml from 'highlight.js/lib/languages/yaml';
 import { t } from '../i18n.ts';
 import { h } from '../ui/dom.ts';
 import { icon } from '../ui/icons.ts';
+import { codeFiles, type CodeFile } from './codefiles.ts';
 import { parse, type Block, type Inline } from './markdown.ts';
 
 const LANGS = { bash, c, cpp, csharp, css, diff, go, java, javascript, json, kotlin, markdown, php, python, ruby, rust, sql, swift, typescript, xml, yaml };
@@ -69,6 +70,19 @@ export function copyButton(get: () => string, label: string, cls = 'icon-btn'): 
   return btn;
 }
 
+/** Saves a blob as a file through the browser's download (nothing leaves the computer). */
+export function downloadBlob(blob: Blob, name: string): void {
+  const url = URL.createObjectURL(blob);
+  const a = h('a', { href: url, download: name });
+  document.body.append(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 10_000);
+}
+
+/** Code blocks of the answer being rendered, with their file names (set by renderMarkdown). */
+let files = new Map<Block, CodeFile>();
+
 function inlines(list: Inline[]): Node[] {
   return list.map((n): Node => {
     switch (n.t) {
@@ -96,10 +110,21 @@ function codeBlock(b: Extract<Block, { t: 'code' }>): HTMLElement {
   if (lang && b.v.length < 60_000) {
     code.innerHTML = hljs.highlight(b.v, { language: lang, ignoreIllegals: true }).value;
   } else code.textContent = b.v;
+  const file = files.get(b);
+  const name = file?.path.split('/').at(-1) ?? '';
+  const save =
+    file && !b.open
+      ? h('button', { type: 'button', class: 'code-copy', title: t('Descargar {f}', { f: name }), 'aria-label': t('Descargar {f}', { f: name }), onclick: () => downloadBlob(new Blob([file.text], { type: 'text/plain;charset=utf-8' }), name) }, icon('download', 16))
+      : null;
   return h(
     'div',
     { class: 'code-block' },
-    h('div', { class: 'code-head' }, h('span', {}, b.lang || t('texto')), copyButton(() => b.v, t('Copiar código'), 'code-copy')),
+    h(
+      'div',
+      { class: 'code-head' },
+      file?.named ? h('span', { class: 'code-file', title: file.path }, file.path, b.lang ? h('small', {}, ` · ${b.lang}`) : null) : h('span', {}, b.lang || t('texto')),
+      h('span', { class: 'code-actions' }, save, copyButton(() => b.v, t('Copiar código'), 'code-copy')),
+    ),
     h('pre', {}, code),
   );
 }
@@ -145,6 +170,9 @@ function blocks(list: Block[]): Node[] {
 
 export function renderMarkdown(src: string): DocumentFragment {
   const f = document.createDocumentFragment();
-  f.append(...blocks(parse(src)));
+  const ast = parse(src);
+  files = codeFiles(ast);
+  f.append(...blocks(ast));
+  files = new Map();
   return f;
 }

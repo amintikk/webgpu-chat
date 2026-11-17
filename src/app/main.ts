@@ -13,7 +13,9 @@ import { cacheStatus, deleteModel, deleteOrphans, isComplete, orphanBytes, stora
 import { clearConversations, deleteConversation, listConversations, newId, saveConversation, titleFrom, type Conversation, type StoredImage, type StoredMessage } from './db.ts';
 import { card, tierLabel } from './modelcards.ts';
 import { level, score, wait, type Level, type Wait } from './score.ts';
-import { copyButton, renderMarkdown } from './render.ts';
+import { copyButton, downloadBlob, renderMarkdown } from './render.ts';
+import { zipFiles } from './codefiles.ts';
+import { makeZip } from './zip.ts';
 import { canSpeak, localVoices, speakButton, speakSample, voicePrefs } from './speak.ts';
 import { exportBackup, readBackup } from './backup.ts';
 import { moveLegacyCache } from '../engine/cachemove.ts';
@@ -451,11 +453,36 @@ function messageView(m: StoredMessage, index: number): HTMLElement {
       { class: 'msg-tools' },
       copyButton(() => m.content, t('Copiar respuesta')),
       speakButton(() => m.content, (msg) => toast(msg)),
+      zipButton(m.content),
       isLast ? h('button', { type: 'button', class: 'icon-btn', title: t('Regenerar'), 'aria-label': t('Regenerar'), onclick: () => void regenerate() }, icon('refresh', 16)) : null,
       m.stats ? h('span', { class: 'msg-stats' }, statsLine(m.stats, m.model)) : null,
     ),
   );
   return view;
+}
+
+/** "ZIP": every file the answer wrote, with its folders, in one download. Shown when there are two or more. */
+function zipButton(content: string): HTMLElement | null {
+  const n = zipFiles(content).length;
+  if (n < 2) return null;
+  const label = t('Descargar los {n} archivos en un ZIP', { n });
+  return h(
+    'button',
+    {
+      type: 'button',
+      class: 'icon-btn zip-btn',
+      title: label,
+      'aria-label': label,
+      onclick: async () => {
+        const enc = new TextEncoder();
+        const blob = await makeZip(zipFiles(content).map((f) => ({ path: f.path, data: enc.encode(f.text) })));
+        const base = (current?.title ?? 'archivos').replace(/[\\/<>:"|?*\u0000-\u001f]/g, '_').trim().slice(0, 60) || 'archivos';
+        downloadBlob(blob, `${base}.zip`);
+      },
+    },
+    icon('download', 16),
+    'ZIP',
+  );
 }
 
 let stick = true;
@@ -764,9 +791,15 @@ function genOptions(m: ModelInfo): GenOptions {
   return { temperature: s.temperature, topP: s.topP, topK: s.topK ?? m.defaults.topK, repetitionPenalty: s.repetitionPenalty ?? m.defaults.repetitionPenalty, maxTokens: s.maxTokens, reasoning: s.reasoning };
 }
 
+const FILE_NAMING = 'When you write a file, put its path in bold on the line just before its code block (for example **src/app.js**) and write the whole file, not only the changed lines.';
+
 function toChat(msgs: StoredMessage[], model: ModelInfo | null = selected): ChatMessage[] {
   const out: ChatMessage[] = [];
-  if (settings.system.trim()) out.push({ role: 'system', content: settings.system.trim() });
+  // With files in the conversation, the model is asked to name the files it writes: each code block can then be
+  // saved under its path and the answer downloaded as a zip (codefiles.ts).
+  const naming = msgs.some((m) => m.files?.length) ? FILE_NAMING : '';
+  const system = [settings.system.trim(), naming].filter(Boolean).join('\n\n');
+  if (system) out.push({ role: 'system', content: system });
   const sees = !!model?.vision;
   for (const m of msgs) {
     if (m.role === 'assistant' && !m.content && !m.reasoning) continue;

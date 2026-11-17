@@ -72,6 +72,8 @@ export const EN: Record<string, string> = {
   '«{f}» no es un ZIP válido o está dañado.': '“{f}” is not a valid ZIP file, or it is damaged.',
   '«{f}» está vacío.': '“{f}” is empty.',
   '{n} archivos': '{n} files',
+  'Descargar {f}': 'Download {f}',
+  'Descargar los {n} archivos en un ZIP': 'Download the {n} files as a ZIP',
   '{n} imágenes': '{n} pictures',
   '«{f}» no es un archivo de texto.': '“{f}” is not a text file.',
   'Lo adjunto es demasiado largo para {m}: ocupa unos {n} tokens y el modelo admite {c} en total, contando los {r} reservados para la respuesta. Sube el contexto en Ajustes, si tu modelo lo permite, o adjunta algo más corto.': 'The attachment is too long for {m}: it takes about {n} tokens and the model holds {c} in total, including the {r} reserved for the answer. Raise the context in Settings, if your model allows it, or attach something shorter.',

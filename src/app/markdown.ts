@@ -12,13 +12,13 @@ export type Inline =
 export type Block =
   | { t: 'p'; c: Inline[] }
   | { t: 'h'; level: number; c: Inline[] }
-  | { t: 'code'; lang: string; v: string; open: boolean }
+  | { t: 'code'; lang: string; v: string; open: boolean; info?: string }
   | { t: 'list'; ordered: boolean; start: number; items: Block[][] }
   | { t: 'quote'; c: Block[] }
   | { t: 'table'; align: ('left' | 'center' | 'right' | null)[]; head: Inline[][]; rows: Inline[][][] }
   | { t: 'hr' };
 
-const FENCE = /^ {0,3}(`{3,}|~{3,})\s*([\w#+.-]*)/;
+const FENCE = /^ {0,3}(`{3,}|~{3,})\s*([\w#+.-]*)(.*)$/;
 const HEADING = /^ {0,3}(#{1,6})\s+(.*?)\s*#*\s*$/;
 const HR = /^ {0,3}([-*_])(\s*\1){2,}\s*$/;
 const BULLET = /^(\s*)([-*+])\s+(.*)$/;
@@ -58,7 +58,9 @@ function parseLines(lines: string[]): Block[] {
         body.push(indent ? l.replace(new RegExp(`^ {0,${indent}}`), '') : l);
         i++;
       }
-      out.push({ t: 'code', lang: m[2]!.toLowerCase(), v: body.join('\n'), open });
+      // What follows the language (```php config/db.php, ```js title="app.js") can name the file.
+      const info = m[3]!.trim();
+      out.push({ t: 'code', lang: m[2]!.toLowerCase(), v: body.join('\n'), open, ...(info ? { info } : {}) });
       continue;
     }
     if (!line.trim()) {
