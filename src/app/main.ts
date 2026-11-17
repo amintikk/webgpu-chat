@@ -134,7 +134,8 @@ function thumbUrl(b: Blob): string {
 }
 let pending: Pending[] = [];
 let pendingSeq = 0;
-const MAX_FILES = 5;
+// The real limit is the context window (checked when sending); this only keeps the composer manageable.
+const MAX_FILES = 30;
 
 // ---------------------------------------------------------------------------------------------
 // Theme
